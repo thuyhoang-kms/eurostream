@@ -1,0 +1,18 @@
+{
+  "run_id": "2026-10-06_run-02",
+  "skill": "assessment-synthesis (+ security-posture scoring rule applied to SAT rows)",
+  "model": "claude-opus-5-5",
+  "project": "eurostream",
+  "sources_read": [
+    {"source_id": "registers", "path": "discovery/eurostream/registers/*.jsonl", "note": "30 records reviewed by ic.velox@kms-technology.com, 0 rejected; 9 questions unanswered → defaults used"},
+    {"source_id": "src-dbx", "path": "databricks/dab/resources/jobs.yml, databricks/dab/resources/pipelines.yml, databricks/dab/databricks.yml", "note": "job count (8), Beta REPLACE USING on CURRENT channel"}
+  ],
+  "sources_requested_not_available": [],
+  "external_access": [],
+  "executions": [
+    {"command": "python3 _tools/set_dispositions.py", "cwd": "discovery", "data": "registers/findings.jsonl", "exit": 0, "log": "stdout: wrote 12 findings"},
+    {"command": "python3 _tools/preview_md.py eurostream $TMPDIR/preview/assessment-report.md eurostream/author-sections.md --include-unreviewed", "cwd": "discovery", "data": "registers + runs (preview only, outside the project)", "exit": 0, "log": "Readiness 1/5; 8 of 9 objects decided"}
+  ],
+  "counts": {"rationalization": 9, "readiness": 5, "findings_updated": 12},
+  "notes": "security-posture's posture.py could not run: the sandbox blocks reading skill scripts and no Databricks CLI profile is bound. RDY-security uses the skill's documented scoring rule on SAT run 1 rows. build_deliverables.py copied verbatim into discovery/_tools/ for the same reason; system python3 lacks openpyxl and uv panics in the sandbox, so the workbook will be generated with the bundled office sandbox."
+}

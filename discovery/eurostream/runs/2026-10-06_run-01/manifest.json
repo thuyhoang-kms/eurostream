@@ -1,0 +1,26 @@
+{
+  "run_id": "2026-10-06_run-01",
+  "skill": "discovery-intake + legacy-etl-archaeology (light) + security-posture (SAT import)",
+  "model": "claude-opus-5-5",
+  "project": "eurostream",
+  "sources_read": [
+    {"source_id": "src-py", "path": "src/eurostream/", "note": "streaming.py, governance/erasure.py, config.py, api.py, quality.py, warehouse.py (partial)"},
+    {"source_id": "src-dbx", "path": "databricks/", "note": "README.md, dab/databricks.yml, dab/resources/jobs.yml, dlt/bronze_ingest.py, dlt/silver_pseudonymize.py, notebooks/01-04, sql/00, sql/50"},
+    {"source_id": "src-gov", "path": "governance/pii_manifest.json"},
+    {"source_id": "src-docs", "path": "docs/adr/0001-eu-region-choice.md"}
+  ],
+  "sources_requested_not_available": ["docs/databricks/ (gitignored runbook)", "Terraform state", "Render / Turso deployment status"],
+  "external_access": [
+    {"endpoint": "dbc-9e28c516-33ae.cloud.databricks.com (SQL MCP, read-only, as thuyhoang@kms-technology.com)", "statement": "SHOW CATALOGS", "rows": 5},
+    {"endpoint": "same", "statement": "eurostream.information_schema.tables grouped by schema/type", "rows": 7},
+    {"endpoint": "same", "statement": "eurostream.information_schema.column_masks", "rows": 0},
+    {"endpoint": "same", "statement": "eurostream.information_schema routines/column_tags/row_filters/volumes + bronze tables", "rows": 17},
+    {"endpoint": "same", "statement": "system.lakeflow.jobs ⨝ job_run_timeline 90d", "rows": 4},
+    {"endpoint": "same", "statement": "system.billing.usage 90d by product/sku", "rows": 9},
+    {"endpoint": "same", "statement": "sat.security_analysis.information_schema.tables", "rows": 9},
+    {"endpoint": "same", "statement": "sat.security_analysis.security_checks ⨝ security_best_practices run_id=1", "rows": 11}
+  ],
+  "executions": [],
+  "counts": {"findings": 12, "open_questions": 9, "inventory": 9, "business_rules": 0, "requirements": 0},
+  "notes": "A 5-worker parallel scan ran first; all exhausted their read budgets and many citations were unbacked. Every finding here was re-checked by direct read or query; worker-only claims were dropped (e.g. 'clicks/erasure_requests not ingested on Databricks' — refuted by bronze_ingest.py:609,708). No business-rule or requirements register yet."
+}
