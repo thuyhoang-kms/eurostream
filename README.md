@@ -1,6 +1,6 @@
 <div align="center">
 
-# EuroStream
+# Retailer X
 
 A Python reference implementation for streaming fraud detection, medallion analytics, and GDPR erasure workflows in European commerce.
 
@@ -20,7 +20,7 @@ A Python reference implementation for streaming fraud detection, medallion analy
 
 Append-only event logs and immutable Parquet files are efficient for analytics. They also make targeted erasure awkward. Deleting a source row does not remove the same person's data from broker partitions, derived tables, processor memory, replicas, or exported files.
 
-EuroStream treats erasure as a cross-system workflow. It pseudonymizes records at the Silver boundary, can pass suppression state to the streaming processor, updates the warehouse, and exposes a verification endpoint. The repository is an implementation of those patterns, not a certification of GDPR compliance or a guarantee of physical deletion from external systems.
+Retailer X treats erasure as a cross-system workflow. It pseudonymizes records at the Silver boundary, can pass suppression state to the streaming processor, updates the warehouse, and exposes a verification endpoint. The repository is an implementation of those patterns, not a certification of GDPR compliance or a guarantee of physical deletion from external systems.
 
 The design is based on four parts of GDPR:
 
@@ -98,10 +98,10 @@ The API queues erasure requests by default and does not start a worker process. 
 
 ## System architecture
 
-EuroStream separates streaming scoring from batch transformation. Both paths use the event bus and warehouse, and the CLI writes streaming alerts to the `bronze.fraud_alerts` table consumed by the Gold transform.
+Retailer X separates streaming scoring from batch transformation. Both paths use the event bus and warehouse, and the CLI writes streaming alerts to the `bronze.fraud_alerts` table consumed by the Gold transform.
 
 <p align="center">
-  <img src="assets/endtoendsystem.png" alt="EuroStream end-to-end system architecture" width="940"/>
+  <img src="assets/endtoendsystem.png" alt="Retailer X end-to-end system architecture" width="940"/>
 </p>
 
 - The streaming path scores payment events and records fraud alerts.
@@ -111,7 +111,7 @@ EuroStream separates streaming scoring from batch transformation. Both paths use
 ### Medallion storage
 
 <p align="center">
-  <img src="assets/medallion-pipeline.png" alt="EuroStream medallion storage and governance pipeline" width="920"/>
+  <img src="assets/medallion-pipeline.png" alt="Retailer X medallion storage and governance pipeline" width="920"/>
 </p>
 
 | Layer | Tables | Storage and governance | Processing |
@@ -129,14 +129,14 @@ The warehouse erasure workflow updates suppression, audit, Bronze, Silver, and G
 ### Storage and runtime boundaries
 
 <p align="center">
-  <img src="assets/failure.png" alt="Five storage and runtime boundaries considered by the EuroStream erasure design" width="920"/>
+  <img src="assets/failure.png" alt="Five storage and runtime boundaries considered by the Retailer X erasure design" width="920"/>
 </p>
 
 #### Append-only event history
 
 Kafka and Kinesis retain payloads in append-only partitions. The local event bus is not purged by an erasure request, and the warehouse suppression set is not a global replay filter for every consumer.
 
-At the Silver boundary, EuroStream computes a deterministic salted hash:
+At the Silver boundary, Retailer X computes a deterministic salted hash:
 
 $$
 H(s, x) = \text{SHA256}(s \parallel ": " \parallel x)
@@ -209,7 +209,7 @@ The audit value is a short SHA-256 confirmation digest. It helps correlate a loc
 The processor consumes payment events, runs the optional suppression callback, and then evaluates three anomaly rules.
 
 <p align="center">
-  <img src="assets/fraudengine.png" alt="EuroStream streaming fraud scoring flow" width="920"/>
+  <img src="assets/fraudengine.png" alt="Retailer X streaming fraud scoring flow" width="920"/>
 </p>
 
 1. Velocity spikes count payments in a fixed event-time bucket. An alert is emitted when the count exceeds the configured threshold:
@@ -363,7 +363,7 @@ The repository includes a separate Databricks implementation under [`databricks/
 | Automation | Optional Declarative Automation Bundle; the primary walkthrough uses the Databricks UI |
 
 <p align="center">
-  <img src="databricks/assets/databricks-pipeline.svg" alt="Standalone Databricks EuroStream architecture" width="1100"/>
+  <img src="databricks/assets/databricks-pipeline.svg" alt="Standalone Databricks Retailer X architecture" width="1100"/>
 </p>
 
 The environment-specific operator guide in `docs/databricks/` is excluded from Git. The checked-in showcase covers the data model, pipeline code, workflow notebooks, governance controls, and application without changing the local runtime.
@@ -375,7 +375,7 @@ The repository includes a research software paper prepared for the Journal of Op
 - [Full paper](paper/paper.md)
 - [BibTeX bibliography](paper/paper.bib)
 
-If you use EuroStream in academic, regulatory, or industrial data engineering research, cite it as:
+If you use Retailer X in academic, regulatory, or industrial data engineering research, cite it as:
 
 ```bibtex
 @article{Biswas2026EuroStream,
