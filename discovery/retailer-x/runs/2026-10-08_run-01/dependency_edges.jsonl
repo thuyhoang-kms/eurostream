@@ -1,0 +1,40 @@
+{"from":"obj-30","to":"obj-01","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/producers.py:114","kind":"stated"}],"status":"extracted"}
+{"from":"obj-30","to":"obj-02","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/producers.py:21","kind":"stated"}],"status":"extracted"}
+{"from":"obj-30","to":"obj-03","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/producers.py:20","kind":"stated"}],"status":"extracted"}
+{"from":"obj-30","to":"obj-06","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/cli.py:56","kind":"stated"}],"status":"extracted"}
+{"from":"obj-31","to":"obj-02","kind":"reads","evidence":[{"source_id":"src-code","locator":"src/eurostream/streaming.py:241","kind":"stated"}],"status":"extracted"}
+{"from":"obj-31","to":"obj-05","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/streaming.py:261","kind":"stated"}],"status":"extracted"}
+{"from":"obj-31","to":"obj-18","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/streaming.py:91","kind":"stated"}],"status":"extracted"}
+{"from":"obj-31","to":"obj-15","kind":"reads","evidence":[{"source_id":"src-code","locator":"src/eurostream/cli.py:163","kind":"stated"}],"status":"extracted"}
+{"from":"obj-32","to":"obj-01","kind":"reads","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:403","kind":"stated"}],"status":"extracted"}
+{"from":"obj-32","to":"obj-07","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:242","kind":"stated"}],"status":"extracted"}
+{"from":"obj-32","to":"obj-08","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:242","kind":"stated"}],"status":"extracted"}
+{"from":"obj-32","to":"obj-09","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:242","kind":"stated"}],"status":"extracted"}
+{"from":"obj-32","to":"obj-10","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:815","kind":"stated"}],"status":"extracted"}
+{"from":"obj-07","to":"obj-11","kind":"depends_on","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:484","kind":"stated"}],"status":"extracted"}
+{"from":"obj-07","to":"obj-12","kind":"depends_on","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:508","kind":"stated"}],"status":"extracted"}
+{"from":"obj-08","to":"obj-12","kind":"depends_on","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:521","kind":"stated"}],"status":"extracted"}
+{"from":"obj-11","to":"obj-13","kind":"depends_on","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:554","kind":"stated"}],"status":"extracted"}
+{"from":"obj-12","to":"obj-14","kind":"depends_on","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:541","kind":"stated"}],"status":"extracted"}
+{"from":"obj-10","to":"obj-14","kind":"depends_on","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:575","kind":"stated"}],"status":"extracted"}
+{"from":"obj-33","to":"obj-13","kind":"reads","evidence":[{"source_id":"src-code","locator":"src/eurostream/quality.py:109","kind":"stated"}],"status":"extracted"}
+{"from":"obj-32","to":"obj-19","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/warehouse.py:795","kind":"stated"}],"status":"extracted"}
+{"from":"obj-36","to":"obj-20","kind":"writes","evidence":[{"source_id":"src-ci","locator":".github/workflows/orchestrate.yml:90","kind":"stated"}],"status":"extracted"}
+{"from":"obj-19","to":"obj-20","kind":"depends_on","evidence":[{"source_id":"src-ci","locator":".github/workflows/orchestrate.yml:90","kind":"stated"}],"status":"extracted"}
+{"from":"obj-35","to":"obj-21","kind":"writes","evidence":[{"source_id":"src-ci","locator":".github/workflows/orchestrate.yml:77","kind":"stated"}],"status":"extracted"}
+{"from":"obj-32","to":"obj-22","kind":"writes","evidence":[{"source_id":"src-ci","locator":".github/workflows/orchestrate.yml:22","kind":"stated"}],"status":"extracted"}
+{"from":"obj-34","to":"obj-07","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/governance/erasure.py:195","kind":"stated"}],"status":"extracted"}
+{"from":"obj-34","to":"obj-11","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/governance/erasure.py:206","kind":"stated"}],"status":"extracted"}
+{"from":"obj-34","to":"obj-13","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/governance/erasure.py:209","kind":"stated"}],"status":"extracted"}
+{"from":"obj-34","to":"obj-15","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/governance/erasure.py:117","kind":"stated"}],"status":"extracted"}
+{"from":"obj-34","to":"obj-16","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/governance/erasure.py:253","kind":"stated"}],"status":"extracted"}
+{"from":"obj-34","to":"obj-21","kind":"writes","evidence":[{"source_id":"src-code","locator":"src/eurostream/governance/erasure.py:230","kind":"stated"}],"status":"extracted"}
+{"from":"obj-34","to":"obj-19","kind":"triggers","evidence":[{"source_id":"src-code","locator":"src/eurostream/governance/erasure.py:153","kind":"stated"}],"status":"extracted"}
+{"from":"obj-37","to":"obj-34","kind":"calls","evidence":[{"source_id":"src-code","locator":"src/eurostream/api.py:209","kind":"stated"}],"status":"extracted"}
+{"from":"obj-37","to":"obj-13","kind":"reads","evidence":[{"source_id":"src-code","locator":"src/eurostream/api.py:486","kind":"stated"}],"status":"extracted"}
+{"from":"obj-37","to":"obj-20","kind":"reads","evidence":[{"source_id":"src-code","locator":"src/eurostream/api.py:141","kind":"stated"}],"status":"extracted"}
+{"from":"obj-37","to":"obj-10","kind":"reads","evidence":[{"source_id":"src-code","locator":"src/eurostream/api.py:506","kind":"stated"}],"status":"extracted"}
+{"from":"obj-38","to":"obj-37","kind":"calls","evidence":[{"source_id":"src-code","locator":"src/eurostream/api.py:62","kind":"stated"}],"status":"extracted"}
+{"from":"obj-55","to":"obj-50","kind":"writes","evidence":[{"source_id":"src-ws","locator":"system.lakeflow.jobs → eurostream_pipeline#409482910379854","kind":"stated"}],"status":"extracted"}
+{"from":"obj-50","to":"obj-51","kind":"depends_on","evidence":[{"source_id":"src-ws","locator":"information_schema.tables → silver.* MATERIALIZED_VIEW created 2026-09-28T05:13","kind":"inferred"}],"status":"extracted"}
+{"from":"obj-51","to":"obj-52","kind":"depends_on","evidence":[{"source_id":"src-ws","locator":"information_schema.tables → gold.* MATERIALIZED_VIEW created 2026-09-28T05:15","kind":"inferred"}],"status":"extracted"}
