@@ -1,0 +1,16 @@
+{"object_id":"obj-002","kind":"table","name":"bronze.clicks","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:35.215Z"}
+{"object_id":"obj-004","kind":"table","name":"bronze.fraud_alerts","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:35.215Z"}
+{"object_id":"obj-001","kind":"table","name":"bronze.orders","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:35.215Z"}
+{"object_id":"obj-003","kind":"table","name":"bronze.payments","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:35.215Z"}
+{"object_id":"obj-008","kind":"table","name":"gold.customer_360","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:36.707Z"}
+{"object_id":"obj-010","kind":"table","name":"gold.fraud_summary","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:36.707Z"}
+{"object_id":"obj-009","kind":"table","name":"gold.order_facts","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:36.707Z"}
+{"object_id":"obj-013","kind":"table","name":"governance.data_quality_runs","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:22.306Z"}
+{"object_id":"obj-011","kind":"table","name":"governance.erasure_audit_log","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:22.306Z"}
+{"object_id":"obj-016","kind":"table","name":"governance.lineage_events","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:22.306Z"}
+{"object_id":"obj-012","kind":"table","name":"governance.pii_manifest","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:22.306Z"}
+{"object_id":"obj-014","kind":"table","name":"governance.suppression_registry","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:22.306Z"}
+{"object_id":"obj-015","kind":"table","name":"governance.watermarks","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:22.306Z"}
+{"object_id":"obj-005","kind":"table","name":"silver.customers","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:42.263Z"}
+{"object_id":"obj-006","kind":"table","name":"silver.orders","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:42.263Z"}
+{"object_id":"obj-007","kind":"table","name":"silver.payments","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-05T06:24:42.263Z"}
