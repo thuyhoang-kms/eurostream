@@ -1,0 +1,1291 @@
+[
+  {
+    "from": "obj-040",
+    "to": "obj-001",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:381",
+        "excerpt": "def load_bronze_from_records(self, topic: str, records: Sequence[Record]) -> None:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "bronze ingest (load_bronze_from_records) writes bronze.orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-040",
+    "to": "obj-002",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:381",
+        "excerpt": "def load_bronze_from_records(self, topic: str, records: Sequence[Record]) -> None:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "bronze ingest (load_bronze_from_records) writes bronze.clicks",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-040",
+    "to": "obj-003",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:381",
+        "excerpt": "def load_bronze_from_records(self, topic: str, records: Sequence[Record]) -> None:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "bronze ingest (load_bronze_from_records) writes bronze.payments",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-040",
+    "to": "obj-018",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:381",
+        "excerpt": "def load_bronze_from_records(self, topic: str, records: Sequence[Record]) -> None:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "bronze ingest (load_bronze_from_records) reads orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-040",
+    "to": "obj-019",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:381",
+        "excerpt": "def load_bronze_from_records(self, topic: str, records: Sequence[Record]) -> None:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "bronze ingest (load_bronze_from_records) reads clicks",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-040",
+    "to": "obj-020",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:381",
+        "excerpt": "def load_bronze_from_records(self, topic: str, records: Sequence[Record]) -> None:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "bronze ingest (load_bronze_from_records) reads payments",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-041",
+    "to": "obj-001",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:632",
+        "excerpt": "def build_silver_incremental(self, pii_salt: str = PII_SALT) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "silver build (build_silver / build_silver_incremental) reads bronze.orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-041",
+    "to": "obj-003",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:632",
+        "excerpt": "def build_silver_incremental(self, pii_salt: str = PII_SALT) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "silver build (build_silver / build_silver_incremental) reads bronze.payments",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-041",
+    "to": "obj-005",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:632",
+        "excerpt": "def build_silver_incremental(self, pii_salt: str = PII_SALT) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "silver build (build_silver / build_silver_incremental) writes silver.customers",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-041",
+    "to": "obj-006",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:632",
+        "excerpt": "def build_silver_incremental(self, pii_salt: str = PII_SALT) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "silver build (build_silver / build_silver_incremental) writes silver.orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-041",
+    "to": "obj-007",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:632",
+        "excerpt": "def build_silver_incremental(self, pii_salt: str = PII_SALT) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "silver build (build_silver / build_silver_incremental) writes silver.payments",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-041",
+    "to": "obj-015",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:632",
+        "excerpt": "def build_silver_incremental(self, pii_salt: str = PII_SALT) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "silver build (build_silver / build_silver_incremental) writes governance.watermarks",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-042",
+    "to": "obj-004",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:700",
+        "excerpt": "def build_gold_incremental(self) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "gold build (build_gold / build_gold_incremental) reads bronze.fraud_alerts",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-042",
+    "to": "obj-005",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:700",
+        "excerpt": "def build_gold_incremental(self) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "gold build (build_gold / build_gold_incremental) reads silver.customers",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-042",
+    "to": "obj-006",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:700",
+        "excerpt": "def build_gold_incremental(self) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "gold build (build_gold / build_gold_incremental) reads silver.orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-042",
+    "to": "obj-008",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:700",
+        "excerpt": "def build_gold_incremental(self) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "gold build (build_gold / build_gold_incremental) writes gold.customer_360",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-042",
+    "to": "obj-009",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:700",
+        "excerpt": "def build_gold_incremental(self) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "gold build (build_gold / build_gold_incremental) writes gold.order_facts",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-042",
+    "to": "obj-010",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:700",
+        "excerpt": "def build_gold_incremental(self) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "gold build (build_gold / build_gold_incremental) writes gold.fraud_summary",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-042",
+    "to": "obj-015",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:700",
+        "excerpt": "def build_gold_incremental(self) -> dict[str, int]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "gold build (build_gold / build_gold_incremental) writes governance.watermarks",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-043",
+    "to": "obj-005",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/cli.py:252",
+        "excerpt": "if not report.all_passed:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "data quality gate (DataQualityEngine.run_all) reads silver.customers",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-043",
+    "to": "obj-008",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/cli.py:252",
+        "excerpt": "if not report.all_passed:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "data quality gate (DataQualityEngine.run_all) reads gold.customer_360",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-043",
+    "to": "obj-013",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/cli.py:252",
+        "excerpt": "if not report.all_passed:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "data quality gate (DataQualityEngine.run_all) writes governance.data_quality_runs",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-044",
+    "to": "obj-023",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:827",
+        "excerpt": "if not rows and self.turso:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "Warehouse read fallback to Turso reads turso mirror database",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-045",
+    "to": "obj-004",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/streaming.py:96",
+        "excerpt": "if stats.count == self._velocity_threshold + 1:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "fraud stream scorer (StreamProcessor + FraudScorer) writes bronze.fraud_alerts",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-045",
+    "to": "obj-020",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/streaming.py:96",
+        "excerpt": "if stats.count == self._velocity_threshold + 1:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "fraud stream scorer (StreamProcessor + FraudScorer) reads payments",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-045",
+    "to": "obj-022",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/streaming.py:96",
+        "excerpt": "if stats.count == self._velocity_threshold + 1:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "fraud stream scorer (StreamProcessor + FraudScorer) writes fraud_alerts",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-046",
+    "to": "obj-014",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/streaming.py:253",
+        "excerpt": "if self._suppression_check(payment.customer_id):",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "streaming suppression check reads governance.suppression_registry",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-001",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes bronze.orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-002",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes bronze.clicks",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-003",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes bronze.payments",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-004",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes bronze.fraud_alerts",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-005",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes silver.customers",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-006",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes silver.orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-007",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes silver.payments",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-008",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes gold.customer_360",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-009",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes gold.order_facts",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-010",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes gold.fraud_summary",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-011",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes governance.erasure_audit_log",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-014",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes governance.suppression_registry",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-021",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) reads erasure_requests",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-023",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes turso mirror database",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-047",
+    "to": "obj-027",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/governance/erasure.py:117",
+        "excerpt": "self._warehouse.add_suppressed(event.customer_id, added_at=started)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "erasure worker (ErasureService) writes data/logs/erasure_audit.jsonl",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-048",
+    "to": "obj-017",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/producers.py:54",
+        "excerpt": "email=self._fake.email(),",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "synthetic event producers (EventGenerator) writes messages",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-048",
+    "to": "obj-018",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/producers.py:54",
+        "excerpt": "email=self._fake.email(),",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "synthetic event producers (EventGenerator) writes orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-048",
+    "to": "obj-019",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/producers.py:54",
+        "excerpt": "email=self._fake.email(),",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "synthetic event producers (EventGenerator) writes clicks",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-048",
+    "to": "obj-020",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/producers.py:54",
+        "excerpt": "email=self._fake.email(),",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "synthetic event producers (EventGenerator) writes payments",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-049",
+    "to": "obj-023",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/cli.py:458",
+        "excerpt": "loaded = warehouse.seed_from_lake(hf_repo)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "Turso sync (sync-turso, seed_from_lake) writes turso mirror database",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-049",
+    "to": "obj-025",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/cli.py:458",
+        "excerpt": "loaded = warehouse.seed_from_lake(hf_repo)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "Turso sync (sync-turso, seed_from_lake) reads HF dataset swadhinbiswas/eustream",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-050",
+    "to": "obj-005",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:785",
+        "excerpt": "def export_lake(self, lake_root: Path) -> list[Path]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "lake export (export_lake) reads silver.customers",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-050",
+    "to": "obj-006",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:785",
+        "excerpt": "def export_lake(self, lake_root: Path) -> list[Path]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "lake export (export_lake) reads silver.orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-050",
+    "to": "obj-007",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:785",
+        "excerpt": "def export_lake(self, lake_root: Path) -> list[Path]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "lake export (export_lake) reads silver.payments",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-050",
+    "to": "obj-008",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:785",
+        "excerpt": "def export_lake(self, lake_root: Path) -> list[Path]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "lake export (export_lake) reads gold.customer_360",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-050",
+    "to": "obj-009",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:785",
+        "excerpt": "def export_lake(self, lake_root: Path) -> list[Path]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "lake export (export_lake) reads gold.order_facts",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-050",
+    "to": "obj-010",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:785",
+        "excerpt": "def export_lake(self, lake_root: Path) -> list[Path]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "lake export (export_lake) reads gold.fraud_summary",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-050",
+    "to": "obj-024",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/warehouse.py:785",
+        "excerpt": "def export_lake(self, lake_root: Path) -> list[Path]:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "lake export (export_lake) writes data/lake Parquet export",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-051",
+    "to": "obj-024",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-iac-01",
+        "locator": ".github/workflows/orchestrate.yml:4",
+        "excerpt": "- cron: \"0 */4 * * *\"",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GitHub Actions orchestrate (4-hourly DAG + HF push) reads data/lake Parquet export",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-051",
+    "to": "obj-025",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-iac-01",
+        "locator": ".github/workflows/orchestrate.yml:4",
+        "excerpt": "- cron: \"0 */4 * * *\"",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GitHub Actions orchestrate (4-hourly DAG + HF push) writes HF dataset swadhinbiswas/eustream",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-052",
+    "to": "obj-029",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/cli.py:250",
+        "excerpt": "def quality_gate() -> None:",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "local medallion DAG (orchestration.py) writes data/logs/pipeline.jsonl",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-070",
+    "to": "obj-008",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:84",
+        "excerpt": "@app.get(\"/stats\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /stats reads gold.customer_360",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-070",
+    "to": "obj-025",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:84",
+        "excerpt": "@app.get(\"/stats\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /stats reads HF dataset swadhinbiswas/eustream",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-071",
+    "to": "obj-021",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:173",
+        "excerpt": "@app.post(\"/erasure-requests\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "POST /erasure-requests writes erasure_requests",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-072",
+    "to": "obj-011",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:206",
+        "excerpt": "@app.post(\"/erase/{customer_id}\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "POST /erase/{customer_id} writes governance.erasure_audit_log",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-073",
+    "to": "obj-001",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:228",
+        "excerpt": "@app.get(\"/verify-erasure/{customer_id}\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /verify-erasure/{customer_id} reads bronze.orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-073",
+    "to": "obj-005",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:228",
+        "excerpt": "@app.get(\"/verify-erasure/{customer_id}\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /verify-erasure/{customer_id} reads silver.customers",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-073",
+    "to": "obj-008",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:228",
+        "excerpt": "@app.get(\"/verify-erasure/{customer_id}\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /verify-erasure/{customer_id} reads gold.customer_360",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-073",
+    "to": "obj-011",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:228",
+        "excerpt": "@app.get(\"/verify-erasure/{customer_id}\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /verify-erasure/{customer_id} reads governance.erasure_audit_log",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-074",
+    "to": "obj-008",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:486",
+        "excerpt": "@app.get(\"/gold/customer-360\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /gold/customer-360 reads gold.customer_360",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-075",
+    "to": "obj-004",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:502",
+        "excerpt": "@app.get(\"/fraud_alerts\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /fraud_alerts reads bronze.fraud_alerts",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-075",
+    "to": "obj-010",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:502",
+        "excerpt": "@app.get(\"/fraud_alerts\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /fraud_alerts reads gold.fraud_summary",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-076",
+    "to": "obj-013",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:513",
+        "excerpt": "@app.get(\"/governance/data_quality_runs\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /governance/data_quality_runs reads governance.data_quality_runs",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-077",
+    "to": "obj-014",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:461",
+        "excerpt": "\"suppressed\": erasure.suppressed_customers(),",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /health reads governance.suppression_registry",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-078",
+    "to": "obj-028",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:465",
+        "excerpt": "@app.get(\"/metrics\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /metrics reads data/logs/metrics.jsonl",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-079",
+    "to": "obj-018",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:272",
+        "excerpt": "@app.post(\"/produce\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "POST /produce writes orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-079",
+    "to": "obj-019",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:272",
+        "excerpt": "@app.post(\"/produce\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "POST /produce writes clicks",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-079",
+    "to": "obj-020",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:272",
+        "excerpt": "@app.post(\"/produce\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "POST /produce writes payments",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-080",
+    "to": "obj-023",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:531",
+        "excerpt": "@app.post(\"/sync-turso\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "POST /sync-turso writes turso mirror database",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-080",
+    "to": "obj-025",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:531",
+        "excerpt": "@app.post(\"/sync-turso\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "POST /sync-turso reads HF dataset swadhinbiswas/eustream",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-081",
+    "to": "obj-001",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:337",
+        "excerpt": "@app.post(\"/transform\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "POST /transform writes bronze.orders",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-081",
+    "to": "obj-005",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:337",
+        "excerpt": "@app.post(\"/transform\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "POST /transform writes silver.customers",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-081",
+    "to": "obj-008",
+    "kind": "writes",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:337",
+        "excerpt": "@app.post(\"/transform\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "POST /transform writes gold.customer_360",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-082",
+    "to": "obj-011",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:480",
+        "excerpt": "@app.get(\"/governance/erasure-audit\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /governance/erasure-audit reads governance.erasure_audit_log",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-083",
+    "to": "obj-014",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:521",
+        "excerpt": "@app.get(\"/governance/suppression-registry\")",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "GET /governance/suppression-registry reads governance.suppression_registry",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-084",
+    "to": "obj-070",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:62",
+        "excerpt": "@app.get(\"/dashboard\", response_class=HTMLResponse)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "Dashboard (Overview, Fraud, Medallion & 360, GDPR, Prometheus tabs) reads GET /stats",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-084",
+    "to": "obj-074",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:62",
+        "excerpt": "@app.get(\"/dashboard\", response_class=HTMLResponse)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "Dashboard (Overview, Fraud, Medallion & 360, GDPR, Prometheus tabs) reads GET /gold/customer-360",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-084",
+    "to": "obj-075",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-code-01",
+        "locator": "src/eurostream/api.py:62",
+        "excerpt": "@app.get(\"/dashboard\", response_class=HTMLResponse)",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "Dashboard (Overview, Fraud, Medallion & 360, GDPR, Prometheus tabs) reads GET /fraud_alerts",
+    "status": "extracted"
+  },
+  {
+    "from": "obj-085",
+    "to": "obj-025",
+    "kind": "reads",
+    "evidence": [
+      {
+        "source_id": "src-hf-api",
+        "locator": "GET https://huggingface.co/api/datasets/swadhinbiswas/eustream → private=false, gated=false",
+        "kind": "stated"
+      }
+    ],
+    "meaning": "Public readers of the HF dataset reads HF dataset swadhinbiswas/eustream",
+    "status": "extracted"
+  }
+]
