@@ -1,0 +1,75 @@
+## identity
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+  "displayName": "workspace-assessor",
+## metastore
+  "cloud": "aws",
+  "name": "metastore_aws_us_east_2",
+  "region": "us-east-2",
+## schemas workspace
+schema workspace.default
+schema workspace.information_schema
+## schemas sat
+schema sat.default
+schema sat.information_schema
+schema sat.security_analysis
+      "data_source_format": "DELTA",     "full_name": "sat.security_analysis.account_info",     "table_type": "MANAGED",
+      "data_source_format": "DELTA",     "full_name": "sat.security_analysis.account_workspaces",     "table_type": "MANAGED",
+      "data_source_format": "DELTA",     "full_name": "sat.security_analysis.clusters_secret_scan_results",     "table_type": "MANAGED",
+      "data_source_format": "DELTA",     "full_name": "sat.security_analysis.notebooks_secret_scan_results",     "table_type": "MANAGED",
+      "data_source_format": "DELTA",     "full_name": "sat.security_analysis.run_number_table",     "table_type": "MANAGED",
+      "data_source_format": "DELTA",     "full_name": "sat.security_analysis.sat_dasf_mapping",     "table_type": "MANAGED",
+      "data_source_format": "DELTA",     "full_name": "sat.security_analysis.security_best_practices",     "table_type": "MANAGED",
+      "data_source_format": "DELTA",     "full_name": "sat.security_analysis.security_checks",     "table_type": "MANAGED",
+      "data_source_format": "DELTA",     "full_name": "sat.security_analysis.workspace_run_complete",     "table_type": "MANAGED",
+## jobs
+    "creator_user_name": "thuyhoang@kms-technology.com",
+    "job_id": 678359531767509,
+      "name": "SAT Driver Notebook",
+    "creator_user_name": "thuyhoang@kms-technology.com",
+    "job_id": 956241198008739,
+      "name": "SAT Initializer Notebook (one-time)",
+    "creator_user_name": "thuyhoang@kms-technology.com",
+    "job_id": 774703844129630,
+      "name": "SAT Secrets Scanner",
+    "creator_user_name": "thuyhoang@kms-technology.com",
+    "job_id": 409482910379854,
+      "name": "eurostream_pipeline",
+    "creator_user_name": "thuyhoang@kms-technology.com",
+    "job_id": 95679000754636,
+      "name": "eurostream_art17_erasure",
+    "creator_user_name": "thuyhoang@kms-technology.com",
+    "job_id": 703057792978798,
+      "name": "eurostream_export_lake",
+    "creator_user_name": "thuyhoang@kms-technology.com",
+    "job_id": 405798465675582,
+      "name": "eurostream_bootstrap",
+## pipelines
+        "state": "COMPLETED",
+        "state": "FAILED",
+        "state": "COMPLETED",
+        "state": "COMPLETED",
+        "state": "FAILED",
+    "name": "eurostream_gold",
+    "pipeline_id": "2dc5f6f9-0aa9-4f50-9b64-9a74bb323473",
+    "state": "IDLE"
+        "state": "COMPLETED",
+        "state": "COMPLETED",
+        "state": "COMPLETED",
+    "name": "eurostream_bronze",
+    "pipeline_id": "812b0c63-02b0-4f84-8179-c4f6b3125a72",
+    "state": "IDLE"
+        "state": "COMPLETED",
+        "state": "COMPLETED",
+        "state": "COMPLETED",
+        "state": "COMPLETED",
+        "state": "COMPLETED",
+    "name": "eurostream_silver",
+    "pipeline_id": "bf3085bc-c28d-409f-a189-ead16559c718",
+    "state": "IDLE"
+## warehouses
+      "name": "CHANNEL_NAME_CURRENT"
+    "id": "1f25a6a8f42db23a",
+    "name": "Serverless Starter Warehouse",
+    "state": "STOPPED",
+## apps
+## volumes workspace

@@ -1,0 +1,520 @@
+{
+  "phase": "Scan",
+  "goal": "EuroStream code-first discovery: inventory, rules, edges and findings per code area, then documents as requirements",
+  "results": [
+    {
+      "title": "Ingest: bus, producers, streaming fraud",
+      "status": "ok",
+      "summary": "Result: partial. Only the bus files (`bus/__init__.py`, `bus/kafka.py`, `bus/sqlite.py`) have exact line locators. The read budget ran out before I could pull line numbers for `producers.py`, `streaming.py`, `models.py` and `config.py`. Items from those four files are given as file plus function name and verbatim excerpt, with no line number.\n\nFindings:\n- `src/eurostream/bus/kafka.py:99` — `return RecordMetadata(topic=topic, partition=0, offset=0)`. The Kafka producer returns a fake partition and offset. Delivery is only observed in the `_on_delivery` callback, which logs errors and does not retry or raise, so a failed delivery is a silent loss. Severity high, category silent data loss and at-least-once gap.\n- `src/eurostream/bus/kafka.py:126` — `\"enable.auto.commit\": False` with a manual synchronous `commit` at line 202. Commit-after-process gives at-least-once delivery. There is no dedup in the consumer path I read. Severity medium, category delivery semantics.\n- `src/eurostream/bus/kafka.py:155` — `except Exception:  # noqa: S110` followed by `pass`. A non-EOF poll error then falls through to `logger.warning(\"Kafka poll error: %s\", err)` and `return None`. A real broker error looks like an empty poll. In `FraudStreamProcessor.run` this counts toward `idle_stop`, so the stream can stop on errors. Severity medium, category silent failure.\n- `src/eurostream/bus/kafka.py:74` and `:137` — `\"sasl.password\": str(password).strip(...)`. Credentials come from settings (`kafka_username`/`kafka_password`, default `None`). I saw no hard-coded credential value in the bus files. `_parse_bootstrap` (line 12) accepts `user:pass@host` URIs and strips them. Severity low, category credentials.\n- `src/eurostream/bus/kafka.py:55` — `security_protocol: str = \"SASL_SSL\"`. The `config.py` default is also `SASL_SSL`, with an unverified comment that the setting can be `PLAINTEXT`. If credentials are absent, no security config is applied at all (the `if username and password:` branch), so the connection falls back to the client default, which is plaintext. Severity medium, category security.\n- `src/eurostream/bus/sqlite.py:55` — `sqlite3.connect(str(db_path), check_same_thread=False, isolation_level=None)`. One connection is shared across threads and consumers, serialised by a `threading.Lock`. The lock only covers one process, and `BEGIN IMMEDIATE` at line 100 is the only cross-process guard. Severity high, category concurrency.\n- `src/eurostream/bus/sqlite.py:97` — `partition = 0`, and `SqliteConsumer` also fixes the partition at line 139. Every topic is a single partition, so there is no parallelism, and ordering is per topic only. The `key` argument is stored but not used for routing. Severity medium, category ordering and scalability.\n- `src/eurostream/bus/sqlite.py:105` — `time.time()` is stored as the REAL `ts` column. It is epoch seconds from the producer host, timezone-neutral but taken from the local clock. Severity low, category timestamps.\n- `src/eurostream/bus/sqlite.py:179` — `SqliteConsumer.commit` writes `self._pos` with `INSERT OR REPLACE`, and `close()` at line 187 also commits. `poll` (line 158) advances `_pos` in memory before the caller finishes processing. A `close()` without a prior successful process therefore commits an offset past an unprocessed record. Severity high, category at-least-once gap and potential loss.\n- `src/eurostream/bus/sqlite.py:12`, `:24`, `:32` — the `messages`, `consumer_offsets` and `broker_offsets` tables have no delete, TTL or retention. The log grows without bound, and `value` holds the full event JSON, including PII (see the `models.py` entries below). Severity medium, category missing retention and PII at rest.\n- `src/eurostream/bus/sqlite.py:119` — `PRAGMA wal_checkpoint(PASSIVE)` runs every `durability_checkpoint` produces (default 100). Durability in between depends on the WAL. The WAL-fallback check around line 58 does nothing (`pass`). Severity low, category durability.\n- `src/eurostream/bus/sqlite.py:195` — `open_bus` creates the parent directory and opens the DB. `SqliteBus.__init__` runs the schema and WAL pragma on construction, so there is a side effect at the point of opening (not at import). Severity low, category side effects.\n- `src/eurostream/producers.py` (`EventGenerator.order` and `.click`) — `email=self._fake.email()`, `iban=self._fake.iban()` and `ip_address=self._fake.ipv4()` are put on the bus topics `orders`, `payments` and `clicks`. `OrderProducer.emit` and `PaymentProducer.emit` publish the model with `value=evt.model_dump_json()`, so the full model is on the bus in clear text. Severity high, category PII in clear text on the bus.\n- `src/eurostream/streaming.py` (`FraudScorer.score`) — `if stats.count == self._velocity_threshold + 1:`. The VELOCITY alert fires only on the single payment that takes the count to threshold+1, so there is one alert per window. `FraudScorer.__init__` uses `velocity_threshold or settings.fraud_velocity_threshold`. Because of `or`, a value of 0 falls back to the setting. Severity low, category rule edge case.\n- `src/eurostream/streaming.py` (`FraudScorer` state) — windows, history and last-seen are held in process memory. `checkpoint()` runs `path.write_text(json.dumps(data))`, which is non-atomic and not tied to bus offsets. The docstring claims \"enables exactly-once recovery\", but offsets are committed separately in `FraudStreamProcessor.run`. After a restart the state can be ahead of or behind the committed offset, and alerts can be replayed or counts doubled. Severity high, category exactly-once gap.\n- `src/eurostream/streaming.py` (`FraudStreamProcessor.run`) — the alert is produced (`self._producer.produce(self._topic, ...)`) and `on_alert` is called, then `self._consumer.commit()` runs. A crash between those steps re-scores the payment and re-emits the alert. There is no alert dedup key. Severity high, category at-least-once duplicates.\n- `src/eurostream/streaming.py` (`FraudStreamProcessor.run`) — `except Exception: self._metrics.incr(\"malformed_events\"); self._consumer.commit(); continue`. Bad records are committed past and dropped with only a counter, no dead-letter topic. The same applies to non-payment records (`payload.get(\"event_type\") != \"payment_processed\"`) and erasure-suppressed customers (`suppressed_for_erasure`). Severity medium, category silent data loss.\n- `src/eurostream/streaming.py` (`FraudScorer.score`) — `ts = payment.occurred_at` uses the producer clock for event-time windows, so there are no watermarks and late or out-of-order events are bucketed by their own `occurred_at` (`_window_key`). `alert_ts=time.time()` uses processing time. Severity medium, category timestamps.\n- `src/eurostream/models.py` (`ErasureRequested`) — `requested_by: str = \"dsar@eurocart.eu\"`. This is a hard-coded default email address, and `reason` defaults to `\"GDPR_ARTICLE_17\"`. Severity low, category hard-coded value.\n- `src/eurostream/config.py` (`PII_SALT`) — the module constant `PII_SALT = \"eurostream-pii-salt\"` is a hard-coded default salt. It is the default of `Settings.pii_salt`, overridable via `EUROSTREAM_PII_SALT`. The code comment itself says to override it in production. Severity high, category hard-coded secret.\n\nSOURCE SYSTEMS (names as the code or config gives them):\n- **SQLite bus:** `open_bus(db_path)` at `src/eurostream/bus/sqlite.py:195`, created at the path passed in by the caller. I did not see the path the caller uses.\n- **Kafka:** `kafka_bootstrap_servers` default `localhost:9092` (`config.py`), SASL_SSL, SCRAM-SHA-256. Credentials are read from settings (`kafka_username`, `kafka_password`).\n- **Schema registry URL:** `kafka_schema_registry_url` default `http://localhost:8081` (`config.py`). I saw no use of it in my files.\n- **Faker:** the generator (`producers.py`) simulates the order, clickstream and payments systems with locales `de_DE`, `fr_FR`, `nl_NL`.\n- **Other stores named in `config.py`:** DuckDB `warehouse_path` default `data/eurocart.d",
+      "citations": {
+        "checked": 17,
+        "unbacked": 5
+      },
+      "conversationId": "wf-db-623af6ce-ff36-4346-9ea5-93de4e0f7e19-1-1",
+      "model": "acp:claude:sonnet",
+      "tokens": 216987,
+      "usage": {
+        "input": 10,
+        "output": 9191,
+        "cacheRead": 151954,
+        "cacheWrite": 55832
+      },
+      "budget": {
+        "bytes": 64642,
+        "steps": 9,
+        "exhausted": true
+      },
+      "findings": [
+        {
+          "file": "src/eurostream/bus/kafka.py",
+          "line": 99,
+          "statement": "KafkaProducer.produce returns a fabricated RecordMetadata(partition=0, offset=0) and delivery failures are only logged in the callback, so failed sends are silently lost."
+        },
+        {
+          "file": "src/eurostream/bus/kafka.py",
+          "line": 126,
+          "statement": "KafkaConsumer sets enable.auto.commit False with manual synchronous commit, giving at-least-once delivery with no consumer-side dedup."
+        },
+        {
+          "file": "src/eurostream/bus/kafka.py",
+          "line": 155,
+          "statement": "KafkaConsumer.poll swallows exceptions with a bare pass and returns None on non-EOF poll errors, so real broker errors look like an empty poll."
+        },
+        {
+          "file": "src/eurostream/bus/sqlite.py",
+          "line": 55,
+          "statement": "SqliteBus uses one shared sqlite3 connection with check_same_thread=False guarded only by an in-process threading.Lock."
+        },
+        {
+          "file": "src/eurostream/bus/sqlite.py",
+          "line": 97,
+          "statement": "SqliteBus.produce hard-codes partition = 0 for every topic, so there is a single partition per topic and the key is not used for routing."
+        },
+        {
+          "file": "src/eurostream/bus/sqlite.py",
+          "line": 179,
+          "statement": "SqliteConsumer.commit persists self._pos, which poll() has already advanced, and close() also commits, so closing can commit past an unprocessed record."
+        },
+        {
+          "file": "src/eurostream/bus/sqlite.py",
+          "line": 12,
+          "statement": "The messages table stores full event JSON (including email, iban and ip_address) with no delete, TTL or retention."
+        }
+      ]
+    },
+    {
+      "title": "Transform: warehouse, orchestration, quality, contracts, lineage",
+      "status": "ok",
+      "summary": "Result: Partial. Warehouse, quality, orchestration and contracts.py were read in full. lineage.py, governance/contracts.json and config.py were not read, because the read budget ran out. I did not see the concrete DAG task list or the config defaults. Line numbers are counted by hand from windows that had no line prefixes, so treat them as ±2. Lines marked `~` are estimates.\n\nFindings:\n\n**1. Source systems**\n- `src/eurostream/warehouse.py:123` — `self.conn = duckdb.connect(str(self._path))`. The primary store is a DuckDB file at `db_path`. The path value comes from a caller or config that I did not read.\n- `warehouse.py:130,134` — `os.getenv(\"TURSO_DATABASE_URL\")` and `os.getenv(\"TURSO_AUTH_TOKEN\")`, with `EUROSTREAM_`-prefixed fallbacks. A secondary Turso/libSQL store is dual-written. The URL and token come from environment variables or constructor arguments, and I copied neither.\n- `warehouse.py:~790-815` (`export_lake`) — `COPY {table} TO '{safe}' (FORMAT PARQUET)`. The lake is written to `<lake_root>/<schema>/<name>.parquet`. `lake_root` is a caller argument.\n- `warehouse.py:~215` (`seed_from_lake`) — `hf_base = f\"hf://datasets/{hf_repo}\"`, default repo `swadhinbiswas/eustream`. The remote lake is Hugging Face Parquet, read only when a local table is empty.\n\n**2. Data objects**\n\nThe write and read functions for each table are in section 5. Hash columns hold salted SHA-256 values, not clear text.\n\n| Table | Line | Layer | PII | Key |\n|---|---|---|---|---|\n| `bronze.orders` | 32 | bronze | `email`, `iban` in clear text, plus `customer_id` | `event_id` PK |\n| `bronze.clicks` | 37 | bronze | `ip_address`, `customer_id`, `session_id` | `event_id` PK |\n| `bronze.payments` | 41 | bronze | `iban`, `customer_id` | `event_id` PK |\n| `bronze.fraud_alerts` | 46 | bronze | `customer_id` only | none; plain INSERT |\n| `silver.customers` | 53 | silver | `email_hash`, `iban_hash`, `name_hash` (always NULL) | `customer_id` PK |\n| `silver.orders` | 59 | silver | `customer_id` | `order_id` PK |\n| `silver.payments` | 63 | silver | `customer_id` | `payment_id` PK |\n| `gold.customer_360` | 70 | gold | `customer_id` | `customer_id` PK |\n| `gold.order_facts` | 76 | gold | `customer_id` | `order_id` PK |\n| `gold.fraud_summary` | 80 | gold | `customer_id` | (`customer_id`, `rule`) PK |\n| `governance.erasure_audit_log` | 87 | governance | `customer_id` | none |\n| `governance.pii_manifest` | 91 | governance | none | none |\n| `governance.data_quality_runs` | 94 | governance | none | none |\n| `governance.suppression_registry` | 97 | governance | `customer_id` | `customer_id` PK |\n| `governance.watermarks` | 100 | governance | none | `pipeline` PK (values `silver`, `gold`) |\n| `governance.lineage_events` | 103 | governance | none | none |\n\n- Lake files are `silver/{customers,orders,payments}.parquet` and `gold/{customer_360,order_facts,fraud_summary}.parquet`. The list is `LAKE_EXPORT_TABLES` (~`warehouse.py:780`).\n- Two silver columns are extra: `silver.customers.erased` (`warehouse.py:57`, default FALSE) and `dedup_count` on orders and payments. `dedup_count` is always written as 1.\n- Gold has two columns that mirror each other: `marketing_consent` and `consents_marketing` (`warehouse.py:73-74`).\n\n**3. Workloads**\n- `load_bronze_from_records`: loads bus records into bronze (~`warehouse.py:370`).\n- `append_order`, `append_click`, `append_payment`, `ingest_fraud_alerts`: write to bronze. Each also dual-writes to Turso.\n- `build_silver` (full rebuild) and `build_silver_incremental`.\n- `build_gold` (full rebuild) and `build_gold_incremental`.\n- `export_lake`, `seed_from_lake`, `sync_all_to_turso`.\n- `save_manifest`, `record_dq` and `add_suppressed` write governance tables.\n- `DataQualityEngine.run_all` (`quality.py:47`) runs these checks in order:\n  1. uniqueness of `gold.customer_360.customer_id`\n  2. uniqueness of `gold.order_facts.order_id`\n  3. PII-not-clear on `silver.customers` (`email_hash`, `iban_hash`)\n  4. consent gating\n  5. referential integrity of `order_facts.customer_id` against `customer_360`\n- `DAG.run` (`orchestration.py`): topological order via `_order`, which raises `DAGRunError` on a cycle, an unknown dependency or a duplicate `task_id`. It runs sequentially, never in parallel.\n- `orchestration.py:35` — `max_retries: int = 1`. That gives two attempts per task with a 0.2 s sleep between. After the retries are used up, the whole DAG raises `DAGRunError`.\n- The concrete task list, task names and schedule were not in my files.\n- Watermarks: a `silver` watermark is set from `max(occurred_at)` of `bronze.orders`. A `gold` watermark is set from `max(last_seen)` of `silver.customers`.\n\n**4. Business rules**\n- Silver orders dedup, ~`warehouse.py:508`: `row_number() OVER (PARTITION BY order_id ORDER BY occurred_at) rn ... WHERE rn = 1`.\n  - Meaning: keep the earliest event per order. Ties are not broken. Not config-driven.\n- Silver payments dedup, ~`warehouse.py:521`: same pattern, partitioned by `payment_id`.\n  - Meaning: keep the earliest event per payment, so later status changes (for example a refund) are dropped. Not config-driven.\n- Silver customers, `warehouse.py:492-496`:\n  - `sha256('{salt}:' || arg_max(email, occurred_at))`: the hash uses the latest email and IBAN.\n  - `min(country)`: the country is the alphabetically smallest value, not the latest or most common.\n  - `bool_and(marketing_consent)`: a customer is consented only if every order carries consent.\n  - `min(occurred_at), max(occurred_at)`: first and last seen.\n  - Only orders feed customers.\n  - `name_hash` is hard-coded NULL (~`warehouse.py:494`).\n  - The salt comes from `PII_SALT` in `config.py`. The default was not read.\n- Incremental Silver, ~`warehouse.py:635`: `SELECT DISTINCT customer_id FROM bronze.orders WHERE occurred_at > ?`.\n  - Meaning: only customers with orders newer than the `silver` watermark are rebuilt.\n- Incremental Silver orders and payments, ~`warehouse.py:665,676`: `INSERT OR IGNORE INTO silver.orders ... WHERE occurred_at > ?`.\n  - Meaning: new rows are inserted, and existing keys are never updated.\n- `build_silver_incremental` return, ~`warehouse.py:697`: `{\"customers\": len(affected), \"orders\": 0, \"payments\": 0}`.\n  - Meaning: the reported order and payment counts are always 0.\n- Gold `customer_360`, ~`warehouse.py:545-560`:\n  - `COUNT(DISTINCT o.order_id)` gives total orders.\n  - `COALESCE(SUM(o.amount_eur),0)` gives total spend.\n  - `COALESCE(AVG(o.amount_eur),0)` gives average order value.\n  - `COALESCE(f.fraud_flag, FALSE)` gives the fraud flag, which is true when any fraud alert exists, whatever the severity.\n  - The joins are LEFT, so customers with no orders still appear. Nothing is rounded.\n  - Amounts are `amount_eur` DOUBLE. There is no currency conversion in these files, although `bronze.orders` carries a `currency` column.\n  - Silver does not carry `currency` forward.\n- Gold `fraud_summary`, ~`warehouse.py:574`: `COUNT(*) as alert_count, MAX(alert_ts) as last_alert ... GROUP BY customer_id, rule`.\n- Gold `order_facts`: a straight copy of `silver.orders`, with no filter on payment status.\n- Incremental Gold, ~`warehouse.py:704-706`: `silver.customers WHERE last_seen > ? UNION ... bronze.fraud_alerts WHERE alert_ts > ?`.\n  - Meaning: customers touched since the `gold` watermark are recomputed.\n- Incremental `order_facts`, ~`warehouse.py:742-744`: `INSERT OR IGNORE INTO gold.order_facts ... WHERE occurred_at > ?`.\n- Bronze, `warehouse.py:~250+`: `INSERT OR IGNORE INTO bronze.orders` on the `event_id` PK.\n  - Meaning: a repeated `event_id` is dropped silently.\n- `load_bronze_from_records`:\n  - Records with an unparseable payload, the wrong `event_type`, or a model validation failure are skipped with a bare `except` and no log or dead-letter.\n  - The `event_type` values are `order_placed`, `page_click` and `payment_processed`.\n- Quality: all checks are recorded through `record_dq`. The thresholds are exact:\n  - `quality.py:67` — uniqueness fails if any duplicate gro",
+      "citations": {
+        "checked": 38,
+        "unbacked": 24
+      },
+      "conversationId": "wf-db-623af6ce-ff36-4346-9ea5-93de4e0f7e19-1-2",
+      "model": "acp:claude:sonnet",
+      "tokens": 163987,
+      "usage": {
+        "input": 8,
+        "output": 19931,
+        "cacheRead": 91036,
+        "cacheWrite": 53012
+      },
+      "budget": {
+        "bytes": 54463,
+        "steps": 5,
+        "exhausted": true
+      },
+      "findings": [
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 123,
+          "statement": "Primary store is a DuckDB file via duckdb.connect(str(self._path)); single-writer engine with Turso dual-write to work around it."
+        },
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 32,
+          "statement": "bronze.orders stores email and iban in clear text (no masking at rest), and bronze is synced to Turso."
+        },
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 508,
+          "statement": "Silver orders dedup keeps earliest row per order_id: row_number() OVER (PARTITION BY order_id ORDER BY occurred_at) with no tie-breaker."
+        },
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 521,
+          "statement": "Silver payments dedup keeps earliest row per payment_id, so later status changes are dropped."
+        },
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 496,
+          "statement": "silver.customers marketing_consent is bool_and across all orders, and country is min(country), not the latest value."
+        },
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 635,
+          "statement": "Incremental Silver selects customers with occurred_at > watermark, on event time; late or out-of-order events with older occurred_at are never processed."
+        },
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 665,
+          "statement": "Incremental silver.orders uses INSERT OR IGNORE filtered by occurred_at > watermark, so corrected orders are never updated."
+        },
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 697,
+          "statement": "build_silver_incremental always returns orders: 0 and payments: 0 regardless of rows inserted."
+        },
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 543,
+          "statement": "build_gold does DELETE FROM gold.customer_360 then INSERT in one execute with no explicit transaction (full rebuild, non-atomic)."
+        },
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 706,
+          "statement": "Incremental Gold compares the gold watermark (derived from silver last_seen) against bronze.fraud_alerts.alert_ts, mixing two clocks."
+        },
+        {
+          "file": "src/eurostream/warehouse.py",
+          "line": 486,
+          "statement": "Salt is interpolated into SQL by f-string (only single quotes escaped) in the build_silver sha256 expression."
+        },
+        {
+          "file": "src/eurostream/quality.py",
+          "line": 47,
+          "statement": "run_all records results and returns a DQReport without raising, although the class docstring says checks fail the DAG; enforcement is not in this file."
+        },
+        {
+          "file": "src/eurostream/quality.py",
+          "line": 107,
+          "statement": "Consent gating check compares consents_marketing to marketing_consent, which are both written from c.marketing_consent in the gold build, so it cannot fail."
+        },
+        {
+          "file": "src/eurostream/orchestration.py",
+          "line": 35,
+          "statement": "DAG max_retries defaults to 1 (two attempts, 0.2s sleep); a task failing after retries raises DAGRunError and aborts the run."
+        }
+      ]
+    },
+    {
+      "title": "Governance: PII, erasure, Turso, config",
+      "status": "ok",
+      "summary": "Result: Partial. The governance, PII, Turso and config files were read; the warehouse, lake and bus code and `benchmarks/benchmark_erasure.py` were not. The file reads returned no line numbers, so locators are file plus verbatim excerpt, and only `api.py` hits carry real line numbers.\n\n**Findings:**\n- `src/eurostream/config.py` (module constant `PII_SALT`) — hard-coded default salt: `PII_SALT = \"eurostream-pii-salt\"`. It is also the default of `Settings.pii_salt`. `config.py` says to override it via `EUROSTREAM_PII_SALT` in production, but nothing enforces that. Severity high, category security.\n- `.env.example` — ships a placeholder salt, `EUROSTREAM_PII_SALT=change-me-in-production`. If that placeholder is copied unchanged into `.env`, it silently replaces the default. Severity medium, category security.\n- `src/eurostream/governance/pii.py` (`hash_pii`) — `hashlib.sha256(f\"{salt}:{value}\".encode()).hexdigest()`. This is a plain salted SHA-256 with one global salt. The same input always gives the same hash, so it is linkable and brute-forceable for low-entropy inputs such as emails. It is pseudonymization, not anonymization. Severity medium, category governance.\n- `src/eurostream/turso.py` (`TURSO_DDL`) — PII goes to the third-party cloud. `\"bronze.orders\"` has `email TEXT, iban TEXT`, `\"bronze.payments\"` has `iban TEXT`, and `\"bronze.clicks\"` has `ip_address TEXT`. All of these are raw columns in the Turso schema. Severity high, category governance. I did not read `sync_all_to_turso` in `warehouse.py`, so what it actually pushes is unconfirmed.\n- `src/eurostream/governance/erasure.py` (`_anonymize_warehouse`) — erasure only anonymizes Bronze (`UPDATE bronze.orders SET email=?, iban=?`). It does not touch `customer_id`, `order_id`, `amount_eur` or `country`, and `bronze.clicks` keeps `session_id`. The customer ID stays linkable in Bronze. Severity medium, category governance.\n- `src/eurostream/governance/erasure.py` — the Turso cascade swallows errors. It is wrapped in `except Exception as e: logger.warning(\"Turso erasure cascade error: %s\", e)`, and the first failed statement aborts the remaining ones. `execute()` still records `status=\"completed\"`, and `layers_touched` never lists Turso. Severity high, category governance.\n- `src/eurostream/governance/erasure.py` — the Turso cascade is not in a transaction and has no verification. It is partial-failure prone: a cloud failure leaves PII in Turso while the audit says completed. Severity high, category governance.\n- `src/eurostream/governance/erasure.py` — the `lake` layer is claimed without being done. `if self._on_complete is not None: layers.append(\"lake\")` records the lake as touched only because a callback exists, and the callback runs after `_append_audit`. Failures in it are swallowed with `logger.exception(\"on_complete failed ...\")`. The audit can therefore claim `lake` when it was not cleaned. Severity high, category governance. The re-snapshot hook is at `cli.py:76`, in the comment \"Re-snapshot the lake after every erasure\"; I did not read its code. The API-side `ErasureService` at `api.py:632` — I did not check whether it wires `on_complete`.\n- `src/eurostream/governance/erasure.py` (`_anonymize_warehouse`) — the audit log stores the raw `customer_id` in `governance.erasure_audit_log`, in the JSONL file, in Turso, and in `suppression_registry`. The erased subject's identifier is retained indefinitely. This is arguably lawful (proof of erasure) but should be a documented decision. Severity low, category governance.\n- `src/eurostream/governance/erasure.py` (`_confirmation_hash`) — `hashlib.sha256(f\"{request_id}:{customer_id}\".encode()).hexdigest()[:16]`. This is called \"tamper-evident\" in the docstring but is unkeyed and truncated to 16 hex characters, so anyone can recompute it. It is not tamper-evident. Severity low, category governance.\n- `src/eurostream/governance/erasure.py` (`request_erasure`) — `requested_by: str = \"dsar@eurocart.eu\"`. The requester defaults to a hard-coded address, and `api.py:209` also passes `requested_by=\"dsar@eurocart.eu\"`. The requester is therefore not authenticated or attributed. Severity low, category governance.\n- `src/eurostream/api.py:251` — `f\"SELECT count(*) FROM governance.erasure_audit_log WHERE customer_id='{customer_id}'\"  # noqa: S608`. Raw path-parameter interpolation into SQL on the verify endpoint is a SQL injection risk. Severity high, category security.\n- `src/eurostream/api.py:173-228` — the erasure endpoints have no authentication. `/erasure-requests`, `/verify-erasure/{customer_id}` and a direct-execute endpoint around line 208 are all exposed. The `/sync-turso` endpoint also has no visible auth at `api.py:531`. I did not read the middleware, so auth may be applied elsewhere. Severity medium, category security.\n- `src/eurostream/governance/pii.py` (`_IPV4_RE`, `_PHONE_RE`, NAME rule) — false-positive risks:\n  - NAME is `re.fullmatch(r\"[A-Z][a-z]+ [A-Z][a-z]+\", ...)` when no other hit. This flags any title-cased two-word value such as \"Black Friday\" or \"New York\" and misses accented or hyphenated names.\n  - `_PHONE_RE` matches any `+` plus 8 or more digits.\n  - IBAN validation is only for 11 countries (`_IBAN_LENGTHS`) and returns False for all others.\n  - Severity low, category data_quality.\n- `governance/pii_manifest.json` — the manifest only covers `bronze.orders` (`email`: EMAIL, `iban`: IBAN). It does not list `bronze.payments.iban`, `bronze.clicks.ip_address`, the Silver hash columns or `customer_id`. The governance gate (`PIIClassifier.detect_unregistered`) would flag those columns, but erasure hard-codes them regardless of the manifest. Severity medium, category governance.\n- `src/eurostream/config.py` (`consent_default`) — the consent default is `False` (opt-out). `.env.example` has `EUROSTREAM_CONSENT_DEFAULT=false`. This is the safe default and is config-driven. The `consent_default` setting's consumer was not located.\n- Credentials: `config.py` holds no secret values. `kafka_password` (default None) and `turso_auth_token` (default None) come from the env, and `.env.example` leaves the Kafka username and password blank. The only hard-coded secret default is the salt.\n- `src/eurostream/turso.py` (`_init_native`) — `except Exception: self._native_conn = None` silently swallows native-driver failures. `execute` then falls back to HTTP, where failures raise. Severity low, category data_quality.\n- `src/eurostream/turso.py` (`TursoClient.__init__`) — `httpx.Client(timeout=15.0, ...)` and `chunk_size = 250` are hard-coded. Severity low.\n\n**1. Source systems and settings**\n- **Settings (`config.py`, env prefix `EUROSTREAM_`, `.env`):**\n\n| Setting | Default |\n|---|---|\n| `event_bus_backend` | `\"sqlite\"` (`sqlite` or `kafka`) |\n| `data_dir` | `PROJECT_ROOT/data` |\n| `kafka_bootstrap_servers` | `\"localhost:9092\"` |\n| `kafka_schema_registry_url` | `\"http://localhost:8081\"` |\n| `kafka_username` | `None` |\n| `kafka_password` | `None` |\n| `kafka_security_protocol` | `\"SASL_SSL\"` |\n| `kafka_sasl_mechanism` | `\"SCRAM-SHA-256\"` |\n| `warehouse_path` | `data/eurocart.duckdb` |\n| `lake_root` | `data/lake` |\n| `pii_manifest_path` | `governance/pii_manifest.json` |\n| `consent_default` | `False` |\n| `pii_salt` | `PII_SALT` constant |\n| `fraud_velocity_threshold` | `5` |\n| `fraud_window_seconds` | `300` |\n| `fraud_amount_zscore` | `3.0` |\n| `erasure_sla_seconds` | `60` |\n| `audit_log_path` | `data/logs/erasure_audit.jsonl` |\n| `metrics_path` | `data/logs/metrics.jsonl` |\n| `pipeline_log_path` | `data/logs/pipeline.jsonl` |\n| `turso_database_url` | `None` |\n| `turso_auth_token` | `None` |\n\n  - `kafka_bootstrap_servers` has a validator that strips a scheme and `user:pass@` from a pasted Aiven URI.\n  - The Turso URL and token also accept the aliases `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN`.\n  - `PROJECT_ROOT` falls back to `Path.cwd()` when there is no `pyproject.toml`.\n- **Turso/libSQL:** `turso.py` takes `database_url` and `auth_token` and converts `libs",
+      "citations": {
+        "checked": 17,
+        "unbacked": 15
+      },
+      "conversationId": "wf-db-623af6ce-ff36-4346-9ea5-93de4e0f7e19-1-3",
+      "model": "acp:claude:sonnet",
+      "tokens": 170058,
+      "usage": {
+        "input": 8,
+        "output": 14331,
+        "cacheRead": 101357,
+        "cacheWrite": 54362
+      },
+      "budget": {
+        "bytes": 61059,
+        "steps": 7,
+        "exhausted": true
+      },
+      "findings": [
+        {
+          "file": "src/eurostream/config.py",
+          "statement": "Hard-coded default PII salt: PII_SALT = \"eurostream-pii-salt\" is also the default of Settings.pii_salt, so hashes use a public salt unless EUROSTREAM_PII_SALT is overridden."
+        },
+        {
+          "file": ".env.example",
+          "statement": ".env.example ships a placeholder salt EUROSTREAM_PII_SALT=change-me-in-production that would silently replace the default if copied unchanged."
+        },
+        {
+          "file": "src/eurostream/governance/pii.py",
+          "statement": "hash_pii is plain SHA-256 of f\"{salt}:{value}\" with a single global salt; deterministic and brute-forceable for low-entropy values, so pseudonymization not anonymization."
+        },
+        {
+          "file": "src/eurostream/turso.py",
+          "statement": "TURSO_DDL creates bronze.orders with raw email and iban, bronze.payments with raw iban, and bronze.clicks with raw ip_address columns in third-party cloud Turso."
+        },
+        {
+          "file": "src/eurostream/governance/erasure.py",
+          "statement": "Turso erasure cascade is wrapped in a single try/except that only logs a warning; the first failure aborts the remaining statements, yet the audit still records status 'completed' and layers_touched never lists Turso."
+        },
+        {
+          "file": "src/eurostream/governance/erasure.py",
+          "statement": "layers.append(\"lake\") is conditioned only on self._on_complete being set, and the hook runs after the audit is written and its exceptions are swallowed, so the audit can claim the lake was cleaned when it was not."
+        },
+        {
+          "file": "src/eurostream/governance/erasure.py",
+          "statement": "Bronze is only masked (email, iban, ip_address overwritten with '<anonymized>'); customer_id, order_id, session_id and amounts remain in Bronze rows, so the data subject stays linkable."
+        },
+        {
+          "file": "src/eurostream/governance/erasure.py",
+          "statement": "_confirmation_hash is an unkeyed sha256 of request_id:customer_id truncated to 16 hex chars, described as tamper-evident but recomputable by anyone."
+        },
+        {
+          "file": "src/eurostream/governance/erasure.py",
+          "statement": "request_erasure defaults requested_by to the hard-coded address dsar@eurocart.eu, so the requester is not attributed or authenticated."
+        },
+        {
+          "file": "src/eurostream/governance/erasure.py",
+          "statement": "Erasure reaches no event-bus topic payloads, the audit JSONL file or the Parquet lake directly; erased customer_id is retained in audit log, suppression registry and JSONL."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "line": 251,
+          "statement": "verify-erasure interpolates the customer_id path parameter directly into SQL via f-string (WHERE customer_id='{customer_id}') with noqa S608, a SQL injection risk."
+        },
+        {
+          "file": "src/eurostream/governance/pii.py",
+          "statement": "NAME classification flags any title-cased two-word string (regex [A-Z][a-z]+ [A-Z][a-z]+) such as place names, and the IBAN checker supports only 11 countries, causing false positives and negatives."
+        },
+        {
+          "file": "governance/pii_manifest.json",
+          "statement": "PII manifest only registers bronze.orders email and iban; bronze.payments.iban and bronze.clicks.ip_address are absent although erasure masks them."
+        }
+      ]
+    },
+    {
+      "title": "Serving: API, dashboard, portal, metrics, CLI",
+      "status": "ok",
+      "summary": "Result: Partial. api.py and dashboard.py were read in full. portal.py, metrics.py, cli.py and config.py were not read because the read budget ran out. The file reads returned no line numbers, so I locate each item by route or function name with a verbatim excerpt and give no `path:line` values.\n\nFindings:\n- **api.py, route `POST /erasure-requests` — erasure queued with no worker in this process.** When `sync` is false it returns `\"status\": \"queued\"`. `bootstrap()` only creates `bus.consumer(\"erasure_requests\", \"api-worker\", ...)` and starts no loop. I saw no code in these two files that consumes the queue, so a queued erasure may never run. Severity: High. Category: erasure queued without a worker.\n- **api.py, routes `POST /erase/{customer_id}`, `POST /erasure-requests` and `/produce`, `/stream`, `/transform`, `/quality-gate`, `/sync-turso` — no auth.** No auth dependency appears anywhere in the file. Anyone can trigger erasure, which is irreversible, and anyone can run pipeline workloads and a Turso sync. `requested_by=\"dsar@eurocart.eu\"` is hard-coded, so the audit trail does not record who made the request. Severity: Critical. Category: unauthenticated destructive endpoint.\n- **api.py, `CORSMiddleware` — CORS wide open.** The excerpt is `allow_origins=[\"*\"], allow_credentials=True, allow_methods=[\"*\"]`. Combined with the missing auth, any web page can call the erasure endpoints. Severity: High. Category: CORS.\n- **api.py, routes `GET /verify-erasure/{customer_id}`, `GET /gold/customer-360?search=`, `GET /governance/erasure-audit`, `GET /governance/suppression-registry`, `GET /health` — unauthenticated PII and SQL injection.**\n  - `/verify-erasure` interpolates the path parameter straight into SQL: `f\"SELECT count(*) FROM gold.customer_360 WHERE customer_id='{customer_id}'\"`. That is SQL injection, marked `# noqa: S608`.\n  - `/gold/customer-360` runs `SELECT * FROM gold.customer_360` and only escapes `'` in `search`.\n  - `/health` returns the full `\"suppressed\": erasure.suppressed_customers()` list. That exposes the IDs of erased customers without auth.\n  - Severity: High. Category: SQL injection and PII exposure.\n- **api.py, `GET /stats` — silent fallback to the Hugging Face dataset.** Condition: `if stats[\"total_rows\"] == 0`. It reads `hf://datasets/swadhinbiswas/eustream/{silver/orders,gold/customer_360,gold/order_facts,gold/fraud_summary}.parquet` through `duckdb.query` and sets `stats[\"source\"]=\"hf_lake\"`. Per-table errors are swallowed with `except Exception: pass`. Two further problems:\n  - The key mapping is wrong: `(\"silver/orders\",\"silver_customers\")` counts the orders file and labels it as the customer count.\n  - The `try` around the warehouse counts catches errors at debug level only, so the dashboard shows zeros or foreign data with no error.\n  - Severity: Medium. Category: silent fallback and untraceable numbers.\n- **api.py, `GET /fraud_alerts` — silent fallback between tables.** If `bronze.fraud_alerts` fails, it returns `gold.fraud_summary ... ORDER BY last_alert DESC`. Those rows have a different shape from the `alert_ts` rows the UI expects. Severity: Low. Category: silent fallback.\n- **api.py, `app = bootstrap()` — import-time side effects.** The excerpt is `app = bootstrap()`, with `logging.basicConfig` also running at import. `bootstrap()` creates `data_dir`, opens the SQLite or Kafka bus, opens `Warehouse(...)` with Turso url and token, and opens `Metrics`. Importing the module therefore opens the stores and possibly the network. Severity: Medium. Category: import-time side effect.\n- **api.py, `create_app` — one shared `warehouse`, `bus`, `erasure` and `metrics` across all requests.** Sync handlers run in a threadpool, and no lock is visible. Severity: Medium. Category: shared connection across threads.\n- **api.py, routes `POST /produce`, `/stream`, `/transform` — failures returned as HTTP 200.** They return `{\"status\": \"error\", \"message\": \"Bus not initialized\"}` with a 200 status. `/produce` and `/transform` also write synthetic data into the production bus and warehouse, and `/transform` ends with `warehouse.export_lake(settings.lake_root)`. Severity: Medium. Category: demo endpoints mixed with production.\n- **api.py, `GET /gold/customer-360` — backend suppression not applied.** The query is `SELECT * FROM gold.customer_360` with no join to `governance.suppression_registry` and no consent filter. It relies only on the erasure cascade having deleted rows. `/fraud_alerts` and `/gold/fraud_summary` also have no suppression filter. Severity: Medium. Category: filter applied in backend but not in API.\n- **dashboard.py, `fetchTabData` — tab names do not match.** It handles `'medallion'`, `'quality'` and `'metrics'`, but the tabs are named `warehouse` and `ops`. As a result `customers`, `dq` and `rawMetrics` are never loaded. The Customer 360 table, the data-quality list and the metric counters stay empty. The consent chart's literal fallback values then show up as real numbers. Severity: Medium. Category: broken or placeholder UI.\n- **dashboard.py, `renderCharts` and the Customer 360 table — numbers that trace to no query.**\n  - Ingest chart: `this.stats.bronze_orders || 65`, `|| 50`, `|| 75`. The \"T-4…Now\" series are fixed multiples of one count, such as `bo*0.6` and `bo*0.75`. The line is synthetic, not a time series.\n  - Fraud chart: `counts.VELOCITY || 4, counts.GEO_MISMATCH || 2, counts.AMOUNT_ZSCORE || 1`.\n  - Consent chart: `|| 18` and `|| 6`, and `Math.max(1, ...)` for the opt-out count.\n  - Customer table: `c.total_spend_eur ? ... : '124.50'`, `'62.25'` and `c.total_orders||1`.\n  - Erasure result panel: `latency_seconds || '0.04'`.\n  - Severity: Medium. Category: numbers not traceable to data.\n- **dashboard.py, static card labels — hard-coded and inconsistent.**\n  - The \"Fraud Caught\" card has the badge `300s Win` and the text `SLA: <b>60s</b>`. The API returns `settings.erasure_sla_seconds`, so the card does not follow that setting.\n  - The Gold card shows `Lake: 6 Parquet`.\n  - The fraud filter labels hard-code `VELOCITY (> 5 payments / 300s)` and `AMOUNT_ZSCORE (> 3.0 std dev)`, although the API uses `settings.fraud_velocity_threshold`.\n  - After a transform the banner says `Quality Gate: OK` without reading the response. The `/transform` response is never checked.\n  - Severity: Low. Category: untraceable numbers.\n- **dashboard.py, the `<head>` — third-party CDN dependencies.** It loads cdn.tailwindcss.com, jsdelivr (alpinejs, chart.js) and cdnjs font-awesome with no integrity hashes. Severity: Low. Category: external dependency.\n\nInventory and rules (all from api.py unless stated):\n\n1. Sources read:\n   - The DuckDB warehouse through `warehouse.scalar` and `warehouse.query`: `bronze.{orders,clicks,payments,fraud_alerts}`, `silver.{customers,orders,payments}`, `gold.{customer_360,order_facts,fraud_summary}`, `governance.{erasure_audit_log,data_quality_runs,suppression_registry,watermarks}`.\n   - Turso, through `warehouse.turso.scalar` and `http_endpoint`. The URL and token come from `settings.turso_database_url` and `settings.turso_auth_token`.\n   - The Hugging Face dataset `swadhinbiswas/eustream`.\n   - The local file `settings.data_dir/lineage.jsonl` (last line, `[:400]`).\n   - The event bus (SQLite `events.db`, or Kafka).\n   - `metrics.snapshot()` and `metrics.render_prometheus()`.\n2. Routes:\n\n| Route | Reads / does | Returns |\n|---|---|---|\n| `GET /` and `GET /dashboard` | HTML from `get_dashboard_html()` | The dashboard page |\n| `GET /api` | Static index | Route listing |\n| `GET /stats` | Counts per table, `get_watermark(\"silver\"/\"gold\")`, the lineage tail, the suppressed count | A stats dict. `total_rows` sums `bronze_orders`, `bronze_clicks`, `bronze_payments`, `silver_customers` and `gold_customers` |\n| `POST /erasure-requests` | `erasure.request_erasure`; runs `execute` if `sync` is true | `status` is `queued` or `completed`, plus the confirmation hash |\n| `POST /erase/{customer_id}` | Runs the synchronous ca",
+      "citations": {
+        "checked": 0,
+        "unbacked": 0
+      },
+      "conversationId": "wf-db-623af6ce-ff36-4346-9ea5-93de4e0f7e19-1-4",
+      "model": "acp:claude:sonnet",
+      "tokens": 140437,
+      "usage": {
+        "input": 6,
+        "output": 12129,
+        "cacheRead": 70883,
+        "cacheWrite": 57419
+      },
+      "budget": {
+        "bytes": 72799,
+        "steps": 2,
+        "exhausted": true
+      },
+      "findings": [
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "POST /erasure-requests returns status 'queued' when sync is false, but bootstrap() only creates an erasure_requests consumer and I saw no worker loop in api.py or dashboard.py that drains it."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "POST /erase/{customer_id}, POST /erasure-requests, /produce, /stream, /transform, /quality-gate and /sync-turso have no authentication, and requested_by is hard-coded to 'dsar@eurocart.eu'."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "CORSMiddleware is configured with allow_origins=['*'], allow_credentials=True, allow_methods=['*'], allow_headers=['*']."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "GET /verify-erasure/{customer_id} interpolates customer_id into SQL via f-strings (SQL injection, noqa S608), and GET /gold/customer-360 only escapes single quotes in search."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "GET /health returns the full list of suppressed (erased) customer IDs without authentication."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "GET /stats silently falls back to hf://datasets/swadhinbiswas/eustream parquet counts when total_rows==0, swallows per-table errors with except/pass, and maps silver/orders to the silver_customers key."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "GET /fraud_alerts silently falls back to gold.fraud_summary (different row shape) when the bronze.fraud_alerts query raises."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "Module-level `app = bootstrap()` opens the bus, DuckDB warehouse (with Turso url/token) and metrics store at import time."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "A single shared warehouse, bus, erasure service and metrics instance is used by all (threadpool) request handlers with no visible locking."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "/produce, /stream and /transform return {'status':'error',...} with HTTP 200 when bus or warehouse is None, and /produce and /transform write synthetic data to the same stores."
+        },
+        {
+          "file": "src/eurostream/api.py",
+          "statement": "GET /gold/customer-360, /fraud_alerts and /gold/fraud_summary apply no suppression-registry or consent filter in the query; they rely on the erasure cascade having deleted rows."
+        },
+        {
+          "file": "src/eurostream/dashboard.py",
+          "statement": "fetchTabData handles tabs 'medallion','quality','metrics' but the tabs are named 'warehouse' and 'ops', so customers, dq and rawMetrics are never loaded."
+        },
+        {
+          "file": "src/eurostream/dashboard.py",
+          "statement": "Charts and tables use literal fallback numbers (ingest 65/50/75, fraud 4/2/1, consent 18/6, spend 124.50/62.25, latency 0.04) and the ingest series are fixed multiples of one count, not a time series."
+        },
+        {
+          "file": "src/eurostream/dashboard.py",
+          "statement": "Static labels hard-code SLA 60s, '300s Win', 'Lake: 6 Parquet', 'VELOCITY (> 5 payments / 300s)' and a transform banner 'Quality Gate: OK' that ignores the response, instead of reading settings or results."
+        }
+      ]
+    },
+    {
+      "title": "Platform: infra, CI, Render, Docker, Databricks tests",
+      "status": "ok",
+      "summary": "Still working: the databricks test output was too large, so I'm re-reading just the assert lines from the two remaining test files.\n\nResult: the Databricks target (`databricks/`, a 94-file bundle) was deleted in commit c78138d. The CI `databricks-app` job and `tests/databricks/*` still depend on it, so they fail today.\n\nFindings:\n- `.github/workflows/ci.yml:36` — `working-directory: databricks/app`; the directory no longer exists, so the `databricks-app` job (lines 32-50) fails at `npm ci` (cache path `databricks/app/package-lock.json`, line 43).\n- `tests/databricks/test_bundle_contracts.py:6` — `DAB = ROOT / \"databricks\" / \"dab\"` is missing. All 5 tests fail; `pyproject.toml:53` sets `testpaths = [\"tests\"]`, so the CI `test` job (`ci.yml:30`) fails too.\n- `tests/databricks/test_critical_repairs.py:9` — `DATABRICKS_ROOT = REPO_ROOT / \"databricks\"` is missing, so every test in this file fails.\n- `tests/databricks/test_notebook_contracts.py:11` — `NOTEBOOKS = REPO_ROOT / \"databricks\" / \"notebooks\"` is missing, so these tests fail as well.\n- `.gitignore:37-46` — still ignores `docs/databricks/`, `.databricks/`, `databricks-target-*/` and `**/databricks/.dab-cache/`. A stale remnant.\n- `.github/workflows/orchestrate.yml:82-90` — pushes `data/lake` to the Hugging Face dataset `swadhinbiswas/eustream` (`repo_type='dataset'`). The lake holds pseudonymized PII, and the repo has no visibility or private setting. *High, privacy.*\n- `.github/workflows/orchestrate.yml:87` — `if not tok: print('HF_TOKEN missing'); exit(0)` makes the upload step silently succeed when the token is missing. *Medium, reliability.*\n- `.github/workflows/orchestrate.yml:4-5` — runs on cron `0 */4 * * *`, on every push to master, and on dispatch. The concurrency group `orchestrate-medallion` (lines 12-14, `cancel-in-progress: false`) queues runs, so they don't overlap. *Medium, no env separation and no approval gate before it writes to production Turso/HF.*\n- `.github/workflows/orchestrate.yml:18-26` — the warehouse cache holds `data/eurocart.duckdb`, `data/events.db` and `governance/pii_manifest.json`. The \"cumulative lake\" lives in the GitHub Actions cache, which can be evicted. The cache key also hashes the very manifest the pipeline rewrites. *Medium, durability and integrity.*\n- `.github/workflows/orchestrate.yml:38-43` — the probe falls back to `backend=sqlite` on any Kafka error. The workflow then keeps going on a different backend and the data diverges. *Medium.*\n- `.github/workflows/orchestrate.yml:5-6` — there is no `permissions:` block in `orchestrate.yml`, `ci.yml` or `deploy-space.yml`, so `GITHUB_TOKEN` gets its default scope. *Low.*\n- `.github/workflows/deploy-space.yml:35` — the Space `swadhinbiswas/eustream` is a personal account. `upload_folder(folder_path='.')` at line 40 uploads the whole repo except the ignore list, and the 402 fallback publishes a static portal. It deploys automatically on every master push with no approval. *Medium.*\n- `.github/workflows/deploy-space.yml:44` — the ignore list excludes `.git/**`, `data/**` and `notes/**` but not `governance/**`. `docs/**`, `tests/**` and `benchmarks/**` also go to the Space. *Low.*\n- `infra/main.tf:109` — `client_subnets = var.subnet_ids`, and `subnet_ids` defaults to `[]` (line 166). `vpc_id` has no default. The MSK cluster can't be created as written. *Low.*\n- `infra/main.tf:102-118` — no `at_rest` KMS key (MSK encrypts at rest with the AWS-managed key by default), and no logging or authentication block. *Low.*\n- `infra/main.tf:139` — the MSK security group allows egress `0.0.0.0/0` on all ports. *Low.*\n- `infra/main.tf:58-60` — S3 SSE uses `AES256` (SSE-S3), not a KMS CMK. *Low.*\n- `infra/main.tf:5-13` — no `backend` block, so Terraform state is local. *Medium.*\n- `infra/main.tf:25` — `environment` defaults to `\"prod\"`; there is no dev/stg separation. *Medium.*\n- `infra/main.tf:1-166` — the Terraform is AWS-only (S3, IAM, MSK). Nothing in the repo provisions Render, HF, Turso, Aiven or Cloudflare, and the Terraform has no Databricks resources. The runtime actually uses Aiven Kafka, Turso, HF and Render, so the Terraform doesn't describe the real stack. *Medium.*\n- `render.yaml:5` — plan `free`, `autoDeploy: true`. The `/health` path is not authenticated, and the service is publicly reachable. Production has no environment separation. *Medium.*\n- `render.yaml:30-31` — `HF_TOKEN` is injected into the public API service. Whether the API needs it is unclear. *Low.*\n- `Dockerfile:41` — exposes 7860 (the HF Space port), while `docker-compose.yml:6` maps `8000:8000` and its healthcheck (line 15) hits `localhost:8000`. The Dockerfile CMD serves on 7860, so compose's API healthcheck and port mapping point at a closed port. *Medium, bug.*\n- `Dockerfile:21` — the image source label is `https://github.com/your-org/eurostream`, a placeholder. *Low.*\n- `site/deploy.sh:19` — `grep -oP` is GNU-only and fails on macOS. *Low.*\n- `.github/workflows/ci.yml:3-7` — CI runs on PRs and on push to master/main, and `deploy-space.yml` and `orchestrate.yml` also trigger on push to master. Deploys don't wait for CI.\n- `.github/workflows/orchestrate.yml:59` — `eurostream stream --max-events 3000` does not match the \"real-time\" label. It is a bounded batch in a 15-minute runner.\n\nInventory (1, 2, 3, 5):\n- **Hosted services:**\n  - AWS provider `region = \"eurostream\"`-style pin: `infra/main.tf:16-17` `region = \"eu-central-1\"`.\n  - Resources: `aws_s3_bucket \"lake\"` (private, versioned), `aws_iam_role \"pipeline\"` (assumed by `ec2.amazonaws.com`), `aws_msk_cluster \"events\"` (3× `kafka.t3.small`, kafka 3.6.0, TLS), `aws_security_group \"msk\"` (ingress 9094 from `10.0.0.0/16`).\n  - Render: `render.yaml:2-6` `eurostream-api`, `type: web`, `env: docker`, `plan: free`, `region: frankfurt`. Start command `uvicorn eurostream.api:app --port $PORT`, health check `/health`.\n  - Render env: Kafka `SASL_SSL` with `SCRAM-SHA-256`. The username, password, bootstrap, Turso URL and token, `EUROSTREAM_PII_SALT` and `HF_TOKEN` are all `sync: false`, i.e. set in the dashboard.\n  - Hugging Face: Docker Space `swadhinbiswas/eurostream` (`deploy-space.yml:35`, secret `HF_TOKEN`); dataset `swadhinbiswas/eustream` (`orchestrate.yml:89`).\n  - Kafka is Aiven-style SASL/SCRAM, with bootstrap taken from the secret `KAFKA_BOOTSTRAP_SERVERS` (`orchestrate.yml:34`). The Aiven provider isn't named in the files I read.\n  - Turso uses the secrets `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` (`orchestrate.yml:56-57`).\n  - Cloudflare Pages: `site/wrangler.toml:1` name `eurostream-docs`, `site/wrangler.toml:10` `SITE_URL = \"https://eurostream-docs.pages.dev\"`. Deploy is manual via `site/deploy.sh:28-31` (`wrangler pages deploy dist`) or `make site-deploy` (`Makefile:51-52`). No Actions workflow deploys it.\n- **Workloads:**\n  - `orchestrate` pipeline (`orchestrate.yml:1-14`): cron `0 */4 * * *`, push to master, dispatch; `timeout-minutes: 15`, job `medallion`. The steps are:\n    1. Restore the cache.\n    2. Probe Kafka.\n    3. `eurostream produce --events 1000`.\n    4. `eurostream stream --max-events 3000`.\n    5. `eurostream transform --incremental`.\n    6. `eurostream sync-turso`.\n    7. Push `data/lake` to the HF dataset.\n  - `CI` (`ci.yml:3-11`): PR, push to master/main, dispatch. Jobs are `lint-typecheck`, `test`, `databricks-app`, `contract` (`eurostream contracts --baseline governance/contracts.json`), `docker` (build, then `docker run eurostream demo`) and `docs`. There are no timeouts.\n  - `deploy-space` (`deploy-space.yml:3-16`): push to master with path filters, `timeout-minutes: 5`.\n- **Tests expect (all missing from the repo):**\n  - Bundle (`databricks/dab/`):\n    - `databricks.yml`.\n    - `resources/pipelines.yml` (3 pipelines, `channel: CURRENT`, `serverless: true`).\n    - `resources/jobs.yml` with jobs `eurostream_art17_erasure`, `eurostream_erasure_benchmark` and `eurostream_fraud_continuous`.\n    - `resources/app.yml` with the groups `eurostream_dpo_operators` and `eu",
+      "citations": {
+        "checked": 40,
+        "unbacked": 8
+      },
+      "conversationId": "wf-db-623af6ce-ff36-4346-9ea5-93de4e0f7e19-1-5",
+      "model": "acp:claude:sonnet",
+      "tokens": 380964,
+      "usage": {
+        "input": 18,
+        "output": 14354,
+        "cacheRead": 317940,
+        "cacheWrite": 48652
+      },
+      "budget": {
+        "bytes": 0,
+        "steps": 0,
+        "exhausted": false
+      },
+      "findings": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 36,
+          "statement": "databricks-app job sets working-directory: databricks/app, which was deleted in commit c78138d, so the job fails at npm ci"
+        },
+        {
+          "file": "tests/databricks/test_bundle_contracts.py",
+          "line": 6,
+          "statement": "DAB = ROOT/'databricks'/'dab' does not exist in the repo, so all tests in this file fail and break the CI pytest job"
+        },
+        {
+          "file": "tests/databricks/test_critical_repairs.py",
+          "line": 9,
+          "statement": "DATABRICKS_ROOT = REPO_ROOT/'databricks' does not exist, so every test reading sql/dlt/notebooks files fails"
+        },
+        {
+          "file": "tests/databricks/test_notebook_contracts.py",
+          "line": 11,
+          "statement": "NOTEBOOKS = REPO_ROOT/'databricks'/'notebooks' does not exist, so the notebook contract tests fail"
+        },
+        {
+          "file": ".gitignore",
+          "line": 37,
+          "statement": "Still ignores docs/databricks/, .databricks/ and databricks-target-*/ although the Databricks implementation was removed (stale remnant)"
+        },
+        {
+          "file": ".github/workflows/orchestrate.yml",
+          "line": 90,
+          "statement": "Uploads data/lake (pseudonymized PII lake) to Hugging Face dataset swadhinbiswas/eustream with no private/visibility setting"
+        },
+        {
+          "file": ".github/workflows/orchestrate.yml",
+          "line": 87,
+          "statement": "Missing HF_TOKEN makes the upload step print a message and exit(0), so the pipeline reports success without publishing"
+        },
+        {
+          "file": ".github/workflows/orchestrate.yml",
+          "line": 5,
+          "statement": "Workflow runs on cron every 4 hours and also on every push to master, writing to production Turso/HF with no environment or approval gate"
+        },
+        {
+          "file": ".github/workflows/orchestrate.yml",
+          "line": 18,
+          "statement": "Cumulative warehouse (duckdb, events.db, pii_manifest.json) is persisted only in evictable actions/cache keyed on the manifest hash"
+        },
+        {
+          "file": ".github/workflows/orchestrate.yml",
+          "line": 42,
+          "statement": "Kafka probe falls back to backend=sqlite on any exception, silently switching the event bus and diverging data"
+        },
+        {
+          "file": ".github/workflows/deploy-space.yml",
+          "line": 44,
+          "statement": "upload_folder of '.' to the HF Space ignores only .git, .venv, site, notes, assets, data, so governance/, docs/, tests/ are published; deploys on every master push without approval"
+        },
+        {
+          "file": "infra/main.tf",
+          "line": 166,
+          "statement": "subnet_ids defaults to [] and vpc_id has no default, so the MSK cluster (client_subnets) cannot be created as written"
+        },
+        {
+          "file": "infra/main.tf",
+          "line": 139,
+          "statement": "MSK security group allows egress 0.0.0.0/0 on all ports and the cluster has no at-rest KMS key, auth, or logging config"
+        },
+        {
+          "file": "infra/main.tf",
+          "line": 5,
+          "statement": "No terraform backend block (local state) and environment defaults to prod, so there is no environment separation; Terraform covers only AWS while runtime uses Render/HF/Turso/Aiven"
+        },
+        {
+          "file": "render.yaml",
+          "line": 5,
+          "statement": "Render service eurostream-api runs plan free with autoDeploy true and receives HF_TOKEN and EUROSTREAM_PII_SALT, no environment separation"
+        },
+        {
+          "file": "Dockerfile",
+          "line": 41,
+          "statement": "Image exposes/serves port 7860 but docker-compose.yml maps 8000:8000 and healthchecks localhost:8000, so compose api is unreachable/unhealthy"
+        },
+        {
+          "file": "site/deploy.sh",
+          "line": 19,
+          "statement": "Uses grep -oP (GNU-only) to parse wrangler.toml, failing on macOS"
+        }
+      ]
+    },
+    {
+      "title": "Documents → requirements (no code)",
+      "status": "ok",
+      "summary": "Result: 38 requirements, 15 conflicts, 12 stated limitations and 12 open gaps extracted from all 11 documents. The documents disagree on several load-bearing points, mainly erasure completeness, the fraud window type and the target warehouse.\n\nFindings:\n- docs/postmortem/inc-2026-001-pii-false-positive.md:57 — the PII gate is fail-closed by design, so a false positive aborts the DAG after Bronze load and before Silver/Gold.\n- README.md:127 — warehouse erasure is not atomic, which conflicts with paper/paper.md:56 (\"atomic Six-Layer Deletion Cascade\").\n- README.md:171 — Layer 5 `FraudScorer.evacuate()` is a \"design target rather than a wired call\".\n- SECURITY.md:21 — the governance API has no authentication, which conflicts with docs/rfc/0001-platform-design.md:262 (\"logs the operator who issued it\").\n- docs/architecture.md:140 — the erasure cascade omits fraud-alert deletion and lake re-export, which docs/gdpr_erasure_flow.md:59-60 lists as steps 5 and 6.\n\n## Requirements\nFormat: ID | type | statement | locator | excerpt | basis. Basis is stated (S) or inferred (I). Priority and owner are given only where a document states them.\n\n**SLOs and performance**\n- R1 | nonfunctional | The erasure cascade must complete within 60 s (`EUROSTREAM_ERASURE_SLA_SECONDS`); breaches increment `erasure_sla_breach`. | docs/architecture.md §SLOs | \"Erasure SLA | 60s\" | S\n- R2 | nonfunctional | The erasure API response returns `request_id` and `sla_seconds`=60. | docs/gdpr_erasure_flow.md:37-45 | \"sla_seconds\": 60 | S\n- R3 | nonfunctional | Fraud alert latency is within one `fraud_window_seconds` window (default 300 s). | docs/architecture.md §SLOs | \"within one `fraud_window_seconds` window (300s)\" | S\n- R4 | nonfunctional | Fraud detection must be sub-minute (\"near-instant\") on the speed path. | docs/rfc/0001-platform-design.md:33 | \"sub-minute (here: near-instant) latency\" | S. RFC:14 says \"within seconds\", which conflicts with the 300 s SLO (C12).\n- R5 | nonfunctional | The data-quality SLO is that all checks pass, and the DAG aborts if any gate fails. | docs/architecture.md §SLOs | \"all checks pass\" | S\n- R6 | nonfunctional | The Databricks showcase and README describe Gold refresh as a four-hourly DAG schedule. | README.md:322 | \"Scheduled four-hour DAG\" | S. This is a schedule, not a freshness SLO.\n- R7 | nonfunctional | The README benchmark reports erasure p95 of 109.20 ms over 50 iterations, local DuckDB only. | README.md:303 | \"p95 Latency : 109.20 ms\" | S\n\n**EU residency**\n- R8 | security | All storage and processing must be pinned to EU regions, set at provider level. | docs/adr/0001-eu-region-choice.md:22,32 | \"All storage and processing is pinned to EU regions\" | S\n- R9 | security | There must be no cross-border transfer, no \"replicate to US for DR\", and no \"temporary processing\" outside the EU. | docs/adr/0001-eu-region-choice.md:44,52 | \"No \\\"replicate to US for DR\\\"\" | S\n- R10 | integration | AWS resources go in `eu-central-1`: versioned AES-256 S3, MSK with 3 brokers and TLS, and an IAM role. | docs/architecture.md:179-183 | \"AWS resources in `eu-central-1`\" | S\n- R11 | security | The platform must prove residency, not just assert it. | docs/adr/0001-eu-region-choice.md:14 | \"The platform must prove residency\" | S\n\n**GDPR Art. 17 erasure**\n- R12 | functional | Erasure is requested via POST `/erasure-requests` with `customer_id`; the API enqueues an `erasure_requested` tombstone on the `erasure_requests` topic. | docs/gdpr_erasure_flow.md:27-28 | \"enqueues an `erasure_requested` tombstone\" | S\n- R13 | functional | Step 1 adds `customer_id` to the in-memory suppression set and the durable `governance.suppression_registry`. | docs/gdpr_erasure_flow.md:55 | \"durable `governance.suppression_registry` table\" | S\n- R14 | functional | Bronze `email`, `iban` and `ip_address` are updated to `<anonymized>`; rows are kept, not deleted. | docs/gdpr_erasure_flow.md:56; docs/architecture.md:140 | \"`<anonymized>`\" | S\n- R15 | functional | Silver `customers`, `orders` and `payments` rows for the customer are deleted. | docs/gdpr_erasure_flow.md:57 | \"DELETE `customers`, `orders`, `payments`\" | S\n- R16 | functional | Gold `customer_360`, `order_facts` and `fraud_summary` rows for the customer are deleted. | docs/gdpr_erasure_flow.md:58 | \"DELETE `customer_360`, `order_facts`, `fraud_summary`\" | S\n- R17 | functional | `bronze.fraud_alerts` rows for the customer are deleted. | docs/gdpr_erasure_flow.md:59 | \"DELETE alerts for the customer from `bronze.fraud_alerts`\" | S\n- R18 | functional | Silver/Gold Parquet in the lake is re-snapshotted so a stale copy does not survive. | docs/gdpr_erasure_flow.md:60 | \"must not survive in a stale lake copy\" | S\n- R19 | functional | Erasure must be idempotent, and the tombstone must be replayed from an uncommitted offset after a worker crash. | docs/gdpr_erasure_flow.md:125-141 | \"running the same request twice produces the same end state\" | S\n- R20 | data | Each execution writes an audit record to `data/logs/erasure_audit.jsonl` and `governance.erasure_audit_log`, with a confirmation hash `sha256(request_id:customer_id)[:16]`. | docs/gdpr_erasure_flow.md:94-100 | \"sha256(request_id:customer_id)[:16]\" | S\n- R21 | functional | `GET /governance/erasure-audit` returns erasure records, newest first. | docs/gdpr_erasure_flow.md:105-108 | \"newest first\" | S\n- R22 | functional | `GET /verify-erasure/{customer_id}` spot-checks `gold.customer_360`, `silver.customers`, Bronze orders and the audit table. | README.md:190 | \"spot check over `gold.customer_360`\" | S\n- R23 | security | An erroneous erasure cannot be rolled back; the guard is prevention through a bounded payload and operator logging. | docs/rfc/0001-platform-design.md:264-266 | \"Rollback of an *erroneous* erasure is impossible by design\" | S\n\n**Consent**\n- R24 | functional | No non-consenting customer may flow into marketing-facing aggregates. | docs/rfc/0001-platform-design.md:36 | \"no non-consenting customer flows into\" | S\n- R25 | data | Gold combines consent with `bool_and(marketing_consent)`, and the quality gate checks `consents_marketing` matches upstream. | README.md:121,249 | \"`bool_and(marketing_consent)`\" | S\n\n**Pseudonymization and PII**\n- R26 | security | Silver hashes configured PII fields as salted SHA-256 over `salt:value`; this is pseudonymized, not anonymous. | docs/rfc/0001-platform-design.md:160; README.md:120 | \"`sha256(salt:value)`\" | S\n- R27 | security | The salt `EUROSTREAM_PII_SALT` must come from a secret manager and be rotated per environment in production; the default is public. | SECURITY.md:19-20 | \"defaults to a public value\" | S\n- R28 | functional | PII recognizers cover email, IBAN (mod-97), IPv4, phone and a conservative name heuristic. | docs/adr/0003-pii-classification.md:24-30 | \"pure-Python recognizer set\" | S\n- R29 | functional | Column classification is a majority vote over sampled values, with a 60% threshold. | docs/adr/0003-pii-classification.md:45 | \"threshold: 60%\" | S\n- R30 | functional | The DAG seeds `governance/pii_manifest.json` on the first run and fails on an unregistered PII-like column. | docs/adr/0003-pii-classification.md:50-52 | \"*fails* if a new PII-like column appears\" | S\n- R31 | functional | The IBAN recognizer must apply the ISO 13616 mod-97 checksum. | docs/postmortem/inc-2026-001-pii-false-positive.md:31 | \"mod-97 (ISO 13616) checksum validation added\" | S\n- R32 | security | The PII gate must not be disabled; false positives are preferred over missed PII. | docs/postmortem/inc-2026-001-pii-false-positive.md:73 | \"We are not disabling the gate\" | S\n\n**Fraud rules**\n- R33 | functional | VELOCITY fires above N payments per window, severity HIGH; the README gives N=5 in 300 s. | docs/rfc/0001-platform-design.md:201; README.md:218 | \"> 5\" | S\n- R34 | functional | AMOUNT_ZSCORE fires when z > 3.0, severity MEDIUM. The history excludes the current payment, uses N−1 degrees of freedom and holds at most 200 values; the paper requi",
+      "citations": {
+        "checked": 40,
+        "unbacked": 0
+      },
+      "conversationId": "wf-db-623af6ce-ff36-4346-9ea5-93de4e0f7e19-1-6",
+      "model": "acp:claude:sonnet",
+      "tokens": 155512,
+      "usage": {
+        "input": 6,
+        "output": 15121,
+        "cacheRead": 83295,
+        "cacheWrite": 57090
+      },
+      "budget": {
+        "bytes": 0,
+        "steps": 0,
+        "exhausted": false
+      },
+      "findings": [
+        {
+          "file": "docs/rfc/0001-platform-design.md",
+          "line": 222,
+          "statement": "RFC says the DataQualityEngine runs 'five checks' but the list that follows (lines 224-229) enumerates six; README.md:243 says six."
+        },
+        {
+          "file": "docs/architecture.md",
+          "line": 140,
+          "statement": "The documented erasure cascade (Bronze anonymize, Silver/Gold delete, audit) omits deleting bronze.fraud_alerts and the lake re-export that docs/gdpr_erasure_flow.md lists as steps 5 and 6."
+        },
+        {
+          "file": "paper/paper.md",
+          "line": 27,
+          "statement": "Paper claims the cascade guarantees verifiable physical erasure across all storage tiers, while README.md:23 and README.md:137 say there is no guarantee of physical deletion externally and the event bus is not purged."
+        },
+        {
+          "file": "README.md",
+          "line": 171,
+          "statement": "README admits the Layer 5 scorer-evacuation (FraudScorer.evacuate()) is a design target rather than a wired call, although line 180 and the paper present it as part of the six-layer cascade."
+        },
+        {
+          "file": "README.md",
+          "line": 157,
+          "statement": "README says the velocity rule uses fixed event-time buckets, conflicting with docs/architecture.md:111 (rolling windows), paper/paper.md:54 (tumbling windows) and README.md:218 (sliding-window formula)."
+        },
+        {
+          "file": "README.md",
+          "line": 147,
+          "statement": "README says suppression is not refreshed automatically in existing services, conflicting with docs/gdpr_erasure_flow.md:55 which says other processes pick it up from the table on startup."
+        },
+        {
+          "file": "SECURITY.md",
+          "line": 21,
+          "statement": "SECURITY.md says the governance API has no authentication, conflicting with docs/rfc/0001-platform-design.md:262 which says the API logs the operator who issued the erasure."
+        },
+        {
+          "file": "README.md",
+          "line": 121,
+          "statement": "README states no downstream marketing-serving filter exists, conflicting with docs/architecture.md:35 and RFC goal (rfc:36) of a consent-aware marketing view with no non-consenting customers."
+        },
+        {
+          "file": "README.md",
+          "line": 318,
+          "statement": "Hosted services (Aiven Kafka, Turso, Hugging Face public lake, Render, Cloudflare) are named with no EU region, conflicting with docs/adr/0001-eu-region-choice.md:22 requiring all storage and processing pinned to EU regions."
+        },
+        {
+          "file": "paper/paper.md",
+          "line": 115,
+          "statement": "Paper claims erasures complete in under 2 seconds and sub-minute guarantees, whereas README.md:303-310 shows a local-DuckDB-only benchmark that excludes bus, Turso, scorer and Hugging Face."
+        },
+        {
+          "file": "docs/architecture.md",
+          "line": 118,
+          "statement": "Architecture says the batch path re-reads the event log from earliest, whereas README.md:120 describes an incremental merge on occurred_at > watermark."
+        },
+        {
+          "file": "docs/adr/0001-eu-region-choice.md",
+          "line": 24,
+          "statement": "ADR names Snowflake/BigQuery as the managed warehouse and never mentions Databricks, while README.md:352 presents a Databricks/Unity Catalog implementation; RFC:275 defers column-level security that README.md:361 lists as implemented."
+        },
+        {
+          "file": "docs/gdpr_erasure_flow.md",
+          "line": 80,
+          "statement": "Audit record is called tamper-evident though its hash is sha256(request_id:customer_id)[:16] over non-secret inputs, and README.md:205 says it is not a proof of deletion."
+        }
+      ]
+    }
+  ]
+}

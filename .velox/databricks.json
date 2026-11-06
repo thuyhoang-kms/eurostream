@@ -1,0 +1,31 @@
+{
+  "format": "velox-databricks/1",
+  "consent": {
+    "model": "desktop",
+    "endpoint": null,
+    "agreedBy": "Thuy Hoang",
+    "at": "2026-11-05",
+    "testDataOnly": true
+  },
+  "environments": {
+    "dev": {
+      "host": "https://dbc-9e28c516-33ae.cloud.databricks.com",
+      "app": null,
+      "warehouse": null
+    },
+    "staging": {
+      "host": null,
+      "app": null,
+      "warehouse": null
+    },
+    "prod": {
+      "host": null,
+      "app": null,
+      "warehouse": null
+    }
+  },
+  "sources": {},
+  "targetCatalog": null,
+  "layout": null,
+  "migrationId": null
+}

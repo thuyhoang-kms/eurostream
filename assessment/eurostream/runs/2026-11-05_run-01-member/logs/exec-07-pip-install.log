@@ -1,0 +1,4 @@
+WARNING: The directory '/Users/thuyhoang/Library/Caches/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+
+[notice] A new release of pip is available: 25.3 -> 26.3
+[notice] To update, run: /private/tmp/claude-1598183506/esvenv/bin/python3.14 -m pip install --upgrade pip

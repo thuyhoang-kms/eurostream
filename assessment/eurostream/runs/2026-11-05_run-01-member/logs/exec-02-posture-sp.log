@@ -1,0 +1,6 @@
+security posture: score not scored / 5 · {'pass': 10, 'fail': 5, 'not_assessed': 53} · weighted coverage 20% · 44 GET calls
+  high   GOV-21    GOV-21 (Governance): owner=86631d5d-6a48-49da-8777-cd9808dcc04e, created_by=86631d5d-6a48-49da-8777-cd9808dcc0
+  high   VX-RES-1  VX-RES-1 (Data Protection): metastore region=us-east-2; allowed /^eu-|europe/
+  medium DP-11     DP-11 (Data Protection): sql_results_download=True
+  medium GOV-42    GOV-42 (Governance): 7 jobs; run as a person: ['SAT Driver Notebook', 'SAT Initializer Notebook (one-time)', '
+  medium VX-IA-1   VX-IA-1 (Identity & Access): maxTokenLifetimeDays=730

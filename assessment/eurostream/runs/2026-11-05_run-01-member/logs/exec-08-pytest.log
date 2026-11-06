@@ -1,0 +1,25 @@
+  /private/tmp/claude-1598183506/esvenv/lib/python3.14/site-packages/_pytest/config/__init__.py:1636: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/databricks/test_bundle_contracts.py::test_pipeline_bundle_uses_triggered_current_serverless_targets
+FAILED tests/databricks/test_bundle_contracts.py::test_erasure_bundle_has_refresh_barrier_and_scoped_physical_cleanup
+FAILED tests/databricks/test_bundle_contracts.py::test_bundle_runtime_groups_and_app_resources_are_explicit
+FAILED tests/databricks/test_bundle_contracts.py::test_dab_stage_sources_are_synced_and_failure_safe
+FAILED tests/databricks/test_bundle_contracts.py::test_uc_policy_uses_current_privilege_names
+FAILED tests/databricks/test_critical_repairs.py::test_catalog_and_bronze_reference_contract_are_present
+FAILED tests/databricks/test_critical_repairs.py::test_pii_hash_fixture_uses_the_local_contract
+FAILED tests/databricks/test_critical_repairs.py::test_pipeline_owned_targets_are_not_bootstrap_created
+FAILED tests/databricks/test_critical_repairs.py::test_dlt_sources_use_current_api_and_explicit_replace_contracts
+FAILED tests/databricks/test_critical_repairs.py::test_governance_uses_group_based_current_uc_syntax
+FAILED tests/databricks/test_critical_repairs.py::test_fraud_job_bootstraps_its_sink_and_keeps_merges_idempotent
+FAILED tests/databricks/test_critical_repairs.py::test_assigned_databricks_files_have_no_local_runtime_imports
+FAILED tests/databricks/test_notebook_contracts.py::test_erasure_text_and_hash_helpers
+FAILED tests/databricks/test_notebook_contracts.py::test_benchmark_percentile_helper
+FAILED tests/databricks/test_notebook_contracts.py::test_notebooks_keep_databricks_as_the_runtime_boundary
+FAILED tests/databricks/test_notebook_contracts.py::test_quality_and_erasure_safety_contracts
+FAILED tests/databricks/test_notebook_contracts.py::test_lakeflow_materialized_view_ownership_boundary
+FAILED tests/databricks/test_notebook_contracts.py::test_export_and_durable_state_contracts
+18 failed, 59 passed, 1 warning in 2.87s
