@@ -1,0 +1,153 @@
+## pipeline 812b0c63-02b0-4f84-8179-c4f6b3125a72
+          "path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/free/dlt/bronze_autoloader"
+    "catalog": "eurostream",
+    "channel": "CURRENT",
+    "continuous": false,
+    "edition": "ADVANCED",
+    "name": "eurostream_bronze",
+    "schema": "bronze",
+    "serverless": true
+  "creator_user_name": "thuyhoang@kms-technology.com",
+  "name": "eurostream_bronze",
+  "run_as_user_name": "thuyhoang@kms-technology.com",
+## pipeline bf3085bc-c28d-409f-a189-ead16559c718
+          "path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/dlt/silver_pseudonymize"
+    "catalog": "eurostream",
+    "channel": "CURRENT",
+    "continuous": false,
+    "edition": "ADVANCED",
+    "name": "eurostream_silver",
+    "schema": "silver",
+    "serverless": true
+  "creator_user_name": "thuyhoang@kms-technology.com",
+  "name": "eurostream_silver",
+  "run_as_user_name": "thuyhoang@kms-technology.com",
+## pipeline 2dc5f6f9-0aa9-4f50-9b64-9a74bb323473
+          "path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/dlt/gold_consent_gated"
+    "catalog": "eurostream",
+    "channel": "CURRENT",
+    "continuous": false,
+    "edition": "ADVANCED",
+    "name": "eurostream_gold",
+    "schema": "gold",
+    "serverless": true
+  "creator_user_name": "thuyhoang@kms-technology.com",
+  "name": "eurostream_gold",
+  "run_as_user_name": "thuyhoang@kms-technology.com",
+## job 409482910379854
+    "name": "eurostream_pipeline",
+        "name": "events"
+        "name": "burst_customer"
+        "name": "customer_pool"
+        "name": "fail_on_error"
+        "name": "run_id"
+        "depends_on": [
+            "task_key": "generate_events"
+          "pipeline_id": "812b0c63-02b0-4f84-8179-c4f6b3125a72"
+        "task_key": "bronze_ingest",
+        "depends_on": [
+            "task_key": "quality_gate"
+        "task_key": "export_lake",
+        "depends_on": [
+            "task_key": "bronze_ingest"
+          "notebook_path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/free/notebooks/30_fraud_batch",
+          "source": "WORKSPACE"
+        "task_key": "fraud_scoring",
+          "notebook_path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/free/notebooks/10_generate_events",
+          "source": "WORKSPACE"
+        "task_key": "generate_events",
+        "depends_on": [
+            "task_key": "silver_transform"
+            "task_key": "fraud_scoring"
+          "pipeline_id": "2dc5f6f9-0aa9-4f50-9b64-9a74bb323473"
+        "task_key": "gold_aggregate",
+        "depends_on": [
+            "task_key": "gold_aggregate"
+          "notebook_path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/notebooks/01_quality_gates",
+          "source": "WORKSPACE"
+        "task_key": "quality_gate",
+        "depends_on": [
+            "task_key": "bronze_ingest"
+          "pipeline_id": "bf3085bc-c28d-409f-a189-ead16559c718"
+        "task_key": "silver_transform",
+### last runs
+    "start_time": 1790588471174,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS",
+    "start_time": 1790572563506,       "life_cycle_state": "INTERNAL_ERROR",       "result_state": "FAILED",
+    "start_time": 1790571373641,       "life_cycle_state": "INTERNAL_ERROR",       "result_state": "FAILED",
+## job 95679000754636
+    "name": "eurostream_art17_erasure",
+        "name": "customer_id"
+        "name": "ticket_id"
+        "name": "request_id"
+        "name": "idempotency_key"
+        "name": "requested_by"
+        "name": "reason"
+        "name": "actor"
+        "name": "workflow_run_id"
+        "name": "internal_slo_seconds"
+        "name": "sla_seconds"
+        "name": "confirm_quiesced_physical_cleanup"
+        "name": "failure_stage"
+        "depends_on": [
+            "task_key": "verify_refresh_barrier"
+        "task_key": "export_lake",
+        "depends_on": [
+            "task_key": "refresh_gold"
+            "task_key": "verify_export_cleanup"
+            "task_key": "suppression_mask"
+            "task_key": "refresh_silver"
+            "task_key": "export_lake"
+            "task_key": "verify_refresh_barrier"
+          "notebook_path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/dab/notebooks/erasure_failure_record",
+          "source": "WORKSPACE"
+        "task_key": "on_failure_record",
+        "depends_on": [
+            "task_key": "refresh_silver"
+          "pipeline_id": "2dc5f6f9-0aa9-4f50-9b64-9a74bb323473"
+        "task_key": "refresh_gold",
+        "depends_on": [
+            "task_key": "suppression_mask"
+          "pipeline_id": "bf3085bc-c28d-409f-a189-ead16559c718"
+        "task_key": "refresh_silver",
+          "notebook_path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/dab/notebooks/erasure_suppression_mask",
+          "source": "WORKSPACE"
+        "task_key": "suppression_mask",
+        "depends_on": [
+            "task_key": "export_lake"
+          "notebook_path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/dab/notebooks/erasure_physical_cleanup",
+          "source": "WORKSPACE"
+        "task_key": "verify_export_cleanup",
+        "depends_on": [
+            "task_key": "refresh_gold"
+          "notebook_path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/dab/notebooks/erasure_refresh_verify",
+          "source": "WORKSPACE"
+        "task_key": "verify_refresh_barrier",
+### last runs
+    "start_time": 1790589091612,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS",
+    "start_time": 1790587882960,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS",
+    "start_time": 1790578907669,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS_WITH_FAILURES",
+    "start_time": 1790578044723,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS_WITH_FAILURES",
+    "start_time": 1790577428819,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS_WITH_FAILURES",
+## job 703057792978798
+    "name": "eurostream_export_lake",
+        "name": "sync_huggingface"
+        "name": "silver_gold_refresh_run_id"
+          "notebook_path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/notebooks/04_export_lake",
+          "source": "WORKSPACE"
+        "task_key": "export_lake",
+### last runs
+    "start_time": 1790589452422,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS",
+    "start_time": 1790588894488,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS",
+    "start_time": 1790588294980,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS",
+    "start_time": 1790579233552,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS",
+    "start_time": 1790578370635,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS",
+## job 405798465675582
+    "name": "eurostream_bootstrap",
+          "notebook_path": "/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/free/notebooks/00_bootstrap",
+          "source": "WORKSPACE"
+        "task_key": "bootstrap",
+### last runs
+    "start_time": 1790571325528,       "life_cycle_state": "TERMINATED",       "result_state": "SUCCESS",
+    "start_time": 1790571199329,       "life_cycle_state": "INTERNAL_ERROR",       "result_state": "FAILED",
+    "start_time": 1790571152268,       "life_cycle_state": "INTERNAL_ERROR",       "result_state": "FAILED",
+    "start_time": 1790571058553,       "life_cycle_state": "INTERNAL_ERROR",       "result_state": "FAILED",

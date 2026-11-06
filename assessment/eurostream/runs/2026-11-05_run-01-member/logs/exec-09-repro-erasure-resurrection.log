@@ -1,0 +1,5 @@
+customer <synthetic id #0>
+before_erasure {'bronze.orders': 1, 'silver.customers': 1, 'silver.orders': 1, 'gold.customer_360': 1, 'suppression_registry': 0}
+after_erasure {'bronze.orders': 1, 'silver.customers': 0, 'silver.orders': 0, 'gold.customer_360': 0, 'suppression_registry': 1}
+after_full_rebuild {'bronze.orders': 1, 'silver.customers': 1, 'silver.orders': 1, 'gold.customer_360': 1, 'suppression_registry': 1}
+resurrected_silver_row_has_email_hash True

@@ -1,0 +1,37 @@
+{
+ "skill": "discovery-intake + legacy-etl-archaeology + requirements-extraction + security-posture (databricks-discovery)",
+ "model": "claude-opus-5-5",
+ "sources": {
+  "src-code": ["src/eurostream"],
+  "src-cfg": ["render.yaml", "Dockerfile", "docker-compose.yml", "governance/contracts.json", "governance/pii_manifest.json", ".env.example", "pyproject.toml"],
+  "src-ci": [".github/workflows"],
+  "src-iac": ["infra/main.tf"],
+  "src-tests": ["tests"],
+  "src-readme": ["README.md"],
+  "src-doc-arch": ["docs/architecture.md"],
+  "src-doc-gdpr": ["docs/gdpr_erasure_flow.md"],
+  "src-doc-rfc": ["docs/rfc/0001-platform-design.md"],
+  "src-doc-adr1": ["docs/adr/0001-eu-region-choice.md"],
+  "src-doc-adr2": ["docs/adr/0002-event-bus.md"],
+  "src-doc-adr3": ["docs/adr/0003-pii-classification.md"],
+  "src-doc-pm": ["docs/postmortem/inc-2026-001-pii-false-positive.md"],
+  "src-doc-sec": ["SECURITY.md"],
+  "src-paper": ["paper/paper.md"],
+  "src-velox": [".velox/PoC.md", ".velox/discussion.md"],
+  "src-ws-dev": ["assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-04-uc-metadata.log", "assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-05-ws-workloads.log"],
+  "src-repro": ["assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-08-pytest.log", "assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-09-repro-erasure-resurrection.log"]
+ },
+ "executions": [
+  {"command": "python3 posture.py identity --profile eurostream-assessor", "cwd": "<project>", "data": "workspace metadata (GET)", "exit": 0, "log": "runs/2026-11-05_run-01-member/logs/exec-01-identity-sp.log"},
+  {"command": "python3 posture.py run --workspace --profile eurostream-assessor --read-as service-principal --iac . --cloud aws --allowed-regions '^eu-|europe'", "cwd": "<project>", "data": "workspace settings metadata (GET only)", "exit": 0, "log": "runs/2026-11-05_run-01-member/logs/exec-02-posture-sp.log"},
+  {"command": "python3 posture.py identity --profile eurostream-free", "cwd": "<project>", "data": "identity only; this login was not used for any assessment read", "exit": 0, "log": "runs/2026-11-05_run-01-member/logs/exec-03-identity-user.log"},
+  {"command": "bash tools/uc_metadata.sh (databricks catalogs/schemas/tables/jobs/pipelines/warehouses list, SP)", "cwd": "<project>", "data": "UC metadata, no rows", "exit": 1, "log": "runs/2026-11-05_run-01-member/logs/exec-04-uc-metadata.log"},
+  {"command": "bash tools/ws_workloads.sh (pipelines get, jobs get, jobs list-runs, SP)", "cwd": "<project>", "data": "pipeline and job definitions, no rows", "exit": 0, "log": "runs/2026-11-05_run-01-member/logs/exec-05-ws-workloads.log"},
+  {"command": "UV_CACHE_DIR=$TMPDIR/uvcache uv sync --frozen", "cwd": "<project>", "data": "none", "exit": 101, "log": "runs/2026-11-05_run-01-member/logs/exec-06-uv-sync.log"},
+  {"command": "python3 -m venv $TMPDIR/esvenv && pip install -e . pytest", "cwd": "<project>", "data": "none", "exit": 0, "log": "runs/2026-11-05_run-01-member/logs/exec-07-pip-install.log"},
+  {"command": "$TMPDIR/esvenv/bin/python -m pytest -q -p no:cacheprovider tests", "cwd": "<project>", "data": "repo fixtures only", "exit": 1, "log": "runs/2026-11-05_run-01-member/logs/exec-08-pytest.log"},
+  {"command": "$TMPDIR/esvenv/bin/python -I tools/repro_erasure_resurrection.py", "cwd": "<project>", "data": "synthetic events (project EventGenerator), temp DuckDB, no Turso, no network", "exit": 0, "log": "runs/2026-11-05_run-01-member/logs/exec-09-repro-erasure-resurrection.log"}
+ ],
+ "sources_requested_not_available": ["src-bundle-eurostream-free", "src-kafka-topics", "src-usage-logs", "src-row-counts", "src-sat-results", "src-uc-catalog-eurostream"],
+ "notes": "Code read before documents (separate passes). Team-knowledge tool not attached (Axis 0 skipped). Posture not scored: SP non-admin, 20% coverage; the person's admin login was not used because the choice card timed out (OQ-18). exec-04 exit 1 comes from the last 'volumes list' loop over an empty schema list; all listings above it completed."
+}

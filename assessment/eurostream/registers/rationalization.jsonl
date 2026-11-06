@@ -1,0 +1,2 @@
+{"object_id":"obj-013","kind":"table","name":"governance.data_quality_runs","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-06T01:43:09.667Z"}
+{"object_id":"obj-014","kind":"table","name":"governance.suppression_registry","disposition":"migrate","status":"reviewed","reviewed_by":"thuyhoang","reviewed_at":"2026-11-06T01:43:10.604Z"}
