@@ -1,0 +1,3 @@
+GET https://huggingface.co/api/datasets/swadhinbiswas/eustream
+id=swadhinbiswas/eustream private=false gated=false lastModified=2026-11-05T01:04:02Z
+siblings: gold/customer_360.parquet gold/fraud_summary.parquet gold/order_facts.parquet silver/customers.parquet silver/orders.parquet silver/payments.parquet

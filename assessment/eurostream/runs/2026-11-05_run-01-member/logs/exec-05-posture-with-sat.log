@@ -1,0 +1,12 @@
+security posture: score 2 / 5 · {'pass': 31, 'fail': 24, 'not_assessed': 13} · weighted coverage 75% · 44 GET calls
+  SAT disagrees on GOV-20 — the live read stands; review them
+  high   GOV-21    GOV-21 (Governance): owner=86631d5d-6a48-49da-8777-cd9808dcc04e, created_by=86631d5d-6a48-49da-8777-cd9808dcc0
+  high   GOV-34    GOV-34 (Governance): {"enable_serverless_compute": "access schema not enabled (state not ENABLE_COMPLETED or M
+  high   NS-11     NS-11 (Network Security): {"defn": "When enabled, configured IP access lists are enforced for the workspace \u
+  high   VX-RES-1  VX-RES-1 (Data Protection): metastore region=us-east-2; allowed /^eu-|europe/
+  medium DP-5      DP-5 (Data Protection): {"defn": "Enable or disable the download button for notebook results."}
+  medium NS-5      NS-5 (Network Security): {"workspaceId": "7474650345400041"}
+  medium DP-8      DP-8 (Data Protection): {"defn": "When enabled, all interactive notebook results are stored in the customer ac
+  medium GOV-15    GOV-15 (Governance): {"defn": "Enable or disable verbose audit logs"}
+  medium DP-9      DP-9 (Data Protection): {"defn": "Enable or disable FileStore endpoint /files"}
+  medium GOV-28    GOV-28 (Governance): 

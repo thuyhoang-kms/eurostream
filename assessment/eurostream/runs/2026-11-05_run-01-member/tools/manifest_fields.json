@@ -1,0 +1,23 @@
+{
+  "skill": "discovery-intake + legacy-etl-archaeology + security-posture (databricks-discovery)",
+  "model": "claude-opus-5-5",
+  "sources": {
+    "src-code-01": ["src/eurostream"],
+    "src-iac-01": ["infra/main.tf", "render.yaml", "docker-compose.yml", "Dockerfile", ".env.example", ".github/workflows", "Makefile", "pyproject.toml"],
+    "src-docs-01": ["README.md", "docs", "SECURITY.md", ".velox/PoC.md", ".velox/discussion.md"],
+    "src-gov-01": ["governance/contracts.json", "governance/pii_manifest.json"],
+    "src-tests-01": ["tests"]
+  },
+  "executions": [
+    {"command": "posture.py run --workspace --profile eurostream-assessor --iac . --cloud aws --allowed-regions '^eu-|europe' --read-as service-principal", "cwd": "<project>", "data": "DEV workspace settings via GET only", "exit": 0, "log": "assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-01-posture.log"},
+    {"command": "databricks catalogs list / schemas list -p eurostream-assessor", "cwd": "<project>", "data": "UC metadata only", "exit": 0, "log": "assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-02-uc-metadata.log"},
+    {"command": "databricks jobs get / jobs list-runs / pipelines list-pipelines / secrets list-scopes -p eurostream-assessor", "cwd": "<project>", "data": "job and pipeline metadata, secret scope names only", "exit": 0, "log": "assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-03-jobs-metadata.log"},
+    {"command": "databricks pipelines get <id> -p eurostream-assessor (salt checked as secret reference, value not printed)", "cwd": "<project>", "data": "pipeline specs", "exit": 0, "log": "assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-04-pipelines-metadata.log"},
+    {"command": "posture.py run ... --sat-results tools/sat-rows.json", "cwd": "<project>", "data": "DEV GET + SAT results", "exit": 0, "log": "assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-05-posture-with-sat.log"},
+    {"command": "uv run --frozen pytest -q", "cwd": "<project>", "data": "repo fixtures only", "exit": 101, "log": "assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-06-pytest.log"},
+    {"command": "POST /api/2.0/sql/statements (tools/sat_query.sql) on Serverless Starter Warehouse", "cwd": "<project>", "data": "52 SAT check-result rows (security config, no business data); approved by the person", "exit": 0, "log": "assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-07-sat-statement.log"},
+    {"command": "GET https://huggingface.co/api/datasets/swadhinbiswas/eustream", "cwd": "<project>", "data": "public dataset metadata only", "exit": 0, "log": "assessment/eurostream/runs/2026-11-05_run-01-member/logs/exec-08-hf-metadata.log"}
+  ],
+  "sources_requested_not_available": ["src-dev-bundle-source", "src-usage-90d", "src-prod-topology", "src-dpo-position", "src-eurostream-catalog-metadata"],
+  "notes": "Code read before documents (code-first). No table rows read except SAT check results, with explicit approval. pytest not run: uv 0.8.23 < 0.9 cannot run in the sandbox. Lakebridge Analyzer not applicable (Python/DuckDB). Workspace reads of exec-02..04, 07, 08 are not in external_access (only posture.py appends there)."
+}

@@ -1,0 +1,8 @@
+{
+  "warehouse_id": "1f25a6a8f42db23a",
+  "statement": "SELECT b.check_id, c.score, c.additional_details, c.run_id, c.check_time\nFROM `sat`.security_analysis.security_checks c JOIN `sat`.security_analysis.security_best_practices b ON c.id = b.id\nWHERE c.workspaceid = '7474650345400041'\n  AND c.run_id = (SELECT max(run_id) FROM `sat`.security_analysis.security_checks WHERE workspaceid = '7474650345400041')\n",
+  "wait_timeout": "50s",
+  "format": "JSON_ARRAY",
+  "disposition": "INLINE",
+  "on_wait_timeout": "CONTINUE"
+}

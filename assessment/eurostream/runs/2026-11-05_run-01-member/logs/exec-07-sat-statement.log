@@ -1,0 +1,2 @@
+{"statement_id":"01f1d8ca-2824-15b5-af27-23514f8db119","state":"SUCCEEDED","rows":52,"columns":["check_id","score","additional_details","run_id","check_time"]}
+POST /api/2.0/sql/statements warehouse=1f25a6a8f42db23a statement=tools/sat_query.sql (SAT check results only; approved by the person 2026-11-05)

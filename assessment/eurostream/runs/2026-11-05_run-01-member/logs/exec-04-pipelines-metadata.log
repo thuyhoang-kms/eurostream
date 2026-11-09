@@ -1,0 +1,18 @@
+## GET /api/2.0/pipelines/812b0c63-02b0-4f84-8179-c4f6b3125a72
+## GET /api/2.0/pipelines/bf3085bc-c28d-409f-a189-ead16559c718
+{"name":"eurostream_silver","run_as_user_name":"thuyhoang@kms-technology.com","spec":{"catalog":"eurostream","schema":"silver","serverless":true,"continuous":false,"channel":"CURRENT","development":null,"libraries":["/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/dlt/silver_pseudonymize"],"config":["eurostream.pii.salt"]},"latest":[{"state":"COMPLETED","creation_time":"2026-09-28T09:52:45.023Z"},{"state":"COMPLETED","creation_time":"2026-09-28T09:43:21.744Z"},{"state":"COMPLETED","creation_time":"2026-09-28T09:33:52.529Z"}]}
+## GET /api/2.0/pipelines/2dc5f6f9-0aa9-4f50-9b64-9a74bb323473
+## workspace bundle tree
+/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/dlt DIRECTORY
+/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/free DIRECTORY
+/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/dab DIRECTORY
+/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/sql DIRECTORY
+/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/notebooks DIRECTORY
+/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/README.md FILE
+## secrets in scope eurostream (keys only)
+## GET /api/2.0/pipelines/812b0c63-02b0-4f84-8179-c4f6b3125a72 (retry)
+{"name":"eurostream_bronze","run_as_user_name":"thuyhoang@kms-technology.com","catalog":"eurostream","schema":"bronze","serverless":true,"continuous":false,"libraries":[{"notebook":{"path":"/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/free/dlt/bronze_autoloader"}}],"config_keys":[],"latest":[{"state":"COMPLETED","creation_time":"2026-09-28T09:41:29.717Z"},{"state":"COMPLETED","creation_time":"2026-09-28T05:16:46.334Z"},{"state":"COMPLETED","creation_time":"2026-09-28T04:56:32.905Z"}]}
+## GET /api/2.0/pipelines/2dc5f6f9-0aa9-4f50-9b64-9a74bb323473 (retry)
+{"name":"eurostream_gold","run_as_user_name":"thuyhoang@kms-technology.com","catalog":"eurostream","schema":"gold","serverless":true,"continuous":false,"libraries":[{"notebook":{"path":"/Workspace/Users/thuyhoang@kms-technology.com/.bundle/eurostream-free/free/files/dlt/gold_consent_gated"}}],"config_keys":[],"latest":[{"state":"COMPLETED","creation_time":"2026-09-28T09:54:49.280Z"},{"state":"FAILED","creation_time":"2026-09-28T09:54:47.384Z"},{"state":"COMPLETED","creation_time":"2026-09-28T09:45:34.344Z"}]}
+## silver pipeline: is configuration eurostream.pii.salt a secret reference? (value not printed)
+{"is_secret_reference":true,"length":31}
